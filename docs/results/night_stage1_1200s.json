@@ -1,0 +1,283 @@
+{
+  "regime": "cruise_const_alt",
+  "initial_optical_height": 40,
+  "passed": true,
+  "metrics": {
+    "samples": 36246,
+    "velocity_rmse_xy": [
+      0.17881173944615,
+      0.10583645983362187
+    ],
+    "yaw_rmse_deg": 1.641846048688868,
+    "yaw_rmse_banked_deg": 1.7318091076536817,
+    "final_drift_m": 121.88509385448805,
+    "path_m": 14288.044477932199,
+    "drift_percent": 0.8530565119862193,
+    "cross_track_rmse_m": 30.21302148005067,
+    "max_cross_track_m": 125.19505626526485,
+    "achieved_waypoint_targets": [
+      [
+        100.0,
+        0.0
+      ],
+      [
+        100.0,
+        100.0
+      ],
+      [
+        0.0,
+        100.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ],
+    "min_height": 38.95418720926101,
+    "max_height": 41.73758447259275,
+    "max_thrust": 1.0,
+    "actual_motor_max": 0.9999999403953552,
+    "gazebo_motor_command_max_rad_s": 1000.0,
+    "height_rmse_40m": 0.35511847708144334,
+    "cross_track_rmse_straight_m": 30.089638008510985,
+    "cross_track_rmse_waypoint_change_m": 30.371817525790174,
+    "velocity_rmse_banked_xy": [
+      0.1287261711694218,
+      0.10004500480406132
+    ],
+    "longest_navigation_gap_s": 0.52800000000002,
+    "roll_rmse_deg": 1.184251250759473,
+    "pitch_rmse_deg": 0.5418717555905848,
+    "setpoint_received_rate_hz": 73.15553381452013
+  },
+  "states": [
+    {
+      "t": 0.0,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 3.02,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 4.224,
+      "state": "REQUEST_OFFBOARD"
+    },
+    {
+      "t": 4.26,
+      "state": "REQUEST_ARM"
+    },
+    {
+      "t": 5.056,
+      "state": "ACTIVE"
+    },
+    {
+      "t": 687.688,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 687.724,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 687.724,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 687.744,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 687.82,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 687.856,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 687.856,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 687.952,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 689.144,
+      "state": "ACTIVE"
+    },
+    {
+      "t": 691.748,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 691.78,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 691.78,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 691.816,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 691.816,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 691.848,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 693.064,
+      "state": "ACTIVE"
+    },
+    {
+      "t": 694.024,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 694.06,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 695.256,
+      "state": "ACTIVE"
+    },
+    {
+      "t": 696.864,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 696.896,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 696.896,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 696.928,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 696.928,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 697.028,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 698.216,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 698.284,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 698.944,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 698.976,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 698.976,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 699.008,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 699.008,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 699.04,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 699.04,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 699.096,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 699.108,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 699.172,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 699.172,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 699.196,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 699.208,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 699.24,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 699.24,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 699.34,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 699.34,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 699.372,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 699.372,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 699.404,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 699.404,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 702.044,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 703.224,
+      "state": "ACTIVE"
+    }
+  ],
+  "gps_parameters": {
+    "SYS_HAS_GPS": "Symbols: x = used, + = saved, * = unsaved\nx + SYS_HAS_GPS [1043,1578] : 0\n\n 1071/1936 parameters used.",
+    "SIM_GPS_USED": "Symbols: x = used, + = saved, * = unsaved\nx + SIM_GPS_USED [914,1441] : 0\n\n 1071/1936 parameters used.",
+    "EKF2_GPS_CTRL": "Symbols: x = used, + = saved, * = unsaved\nx + EKF2_GPS_CTRL [396,585] : 0\n\n 1071/1936 parameters used."
+  },
+  "launch_time": 5.056,
+  "end_time": 1205.056,
+  "px4_ulog": "log_visual_nav/night_stage1_1200s.ulg"
+}

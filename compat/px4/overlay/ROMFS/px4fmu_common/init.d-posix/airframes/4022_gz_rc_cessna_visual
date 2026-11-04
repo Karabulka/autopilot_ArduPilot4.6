@@ -1,0 +1,33 @@
+#!/bin/sh
+# @name Gazebo rc_cessna_visual GPS-denied attitude Offboard
+# @type Fixedwing
+# @class Simulation
+
+visual_nav_world=${PX4_GZ_WORLD:-visual_nav_flight}
+. ${R}etc/init.d-posix/airframes/4003_gz_rc_cessna
+PX4_SIM_MODEL=rc_cessna_visual
+PX4_GZ_WORLD=$visual_nav_world
+
+# Hard settings: a previously saved GPS configuration must not override this airframe.
+param set SYS_HAS_GPS 0
+param set SIM_GPS_USED 0
+param set EKF2_GPS_CTRL 0
+param set EKF2_EV_CTRL 0
+param set EKF2_OF_CTRL 0
+param set EKF2_MAG_DECL 11.459156
+param set EKF2_DECL_TYPE 0
+param set UXRCE_DDS_SYNCT 0
+param set UXRCE_DDS_PTCFG 2
+# The rc_cessna airspeed simulator uses EKF groundspeed; this aircraft has no GPS.
+# Fixed-wing attitude/rate loops use configured trim airspeed when no pitot exists.
+param set SENS_EN_ARSPDSIM 0
+param set-default FW_USE_AIRSPD 0
+param set SYS_HAS_NUM_ASPD 0
+param set-default COM_ARM_WO_GPS 1
+param set-default COM_RC_IN_MODE 4
+param set-default COM_RCL_EXCEPT 4
+param set-default COM_OF_LOSS_T 1.0
+# No global-position RTL without GPS; pilot-stabilized mode on Offboard loss.
+param set-default COM_OBL_RC_ACT 2
+param set-default NAV_DLL_ACT 0
+param set-default COM_DL_LOSS_T 120

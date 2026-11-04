@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <transport_descriptors>
+    <transport_descriptor>
+      <transport_id>wsl_loopback</transport_id>
+      <type>UDPv4</type>
+      <!-- WSL mirrored loopback advertises MTU 65536, but payloads >1472 are lost.
+           Keep RTPS datagrams below the real 1500-byte path MTU. -->
+      <maxMessageSize>1200</maxMessageSize>
+      <maxInitialPeersRange>32</maxInitialPeersRange>
+      <interfaceWhiteList><address>127.0.0.1</address></interfaceWhiteList>
+      <sendBufferSize>4194304</sendBufferSize>
+      <receiveBufferSize>4194304</receiveBufferSize>
+    </transport_descriptor>
+  </transport_descriptors>
+  <participant profile_name="wsl_loopback" is_default_profile="true">
+    <rtps>
+      <useBuiltinTransports>false</useBuiltinTransports>
+      <userTransports><transport_id>wsl_loopback</transport_id></userTransports>
+      <defaultUnicastLocatorList>
+        <locator><udpv4><address>127.0.0.1</address><port>0</port></udpv4></locator>
+      </defaultUnicastLocatorList>
+      <builtin>
+        <metatrafficUnicastLocatorList>
+          <locator><udpv4><address>127.0.0.1</address><port>0</port></udpv4></locator>
+        </metatrafficUnicastLocatorList>
+        <avoid_builtin_multicast>true</avoid_builtin_multicast>
+        <initialPeersList>
+          <locator><udpv4><address>127.0.0.1</address><port>0</port></udpv4></locator>
+        </initialPeersList>
+      </builtin>
+    </rtps>
+  </participant>
+  <!-- uXRCE's default XML creation overwrites transport QoS. PX4 requests this
+       named participant via UXRCE_DDS_PTCFG=2 so the Agent also obeys the WSL MTU. -->
+  <participant profile_name="px4_participant">
+    <rtps>
+      <useBuiltinTransports>false</useBuiltinTransports>
+      <userTransports><transport_id>wsl_loopback</transport_id></userTransports>
+      <defaultUnicastLocatorList><locator><udpv4><address>127.0.0.1</address><port>0</port></udpv4></locator></defaultUnicastLocatorList>
+      <builtin>
+        <metatrafficUnicastLocatorList><locator><udpv4><address>127.0.0.1</address><port>0</port></udpv4></locator></metatrafficUnicastLocatorList>
+        <avoid_builtin_multicast>true</avoid_builtin_multicast>
+        <initialPeersList><locator><udpv4><address>127.0.0.1</address><port>0</port></udpv4></locator></initialPeersList>
+      </builtin>
+    </rtps>
+  </participant>
+  <data_writer profile_name="wsl_writer" is_default_profile="true">
+    <qos><data_sharing><kind>OFF</kind></data_sharing></qos>
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+  </data_writer>
+  <data_reader profile_name="wsl_reader" is_default_profile="true">
+    <qos><data_sharing><kind>OFF</kind></data_sharing></qos>
+    <historyMemoryPolicy>PREALLOCATED_WITH_REALLOC</historyMemoryPolicy>
+  </data_reader>
+</profiles>

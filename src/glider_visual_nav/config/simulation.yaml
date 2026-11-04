@@ -1,0 +1,18 @@
+/**:
+  ros__parameters:
+    use_sim_time: true
+    orientation_mode: homography_mag
+    h: 40.0
+    camera_offset_body: [0.0, 0.0, -0.25]
+optical_flow_node:
+  ros__parameters:
+    fx: 269.968
+    fy: 269.968
+    cx: 320.0
+    cy: 240.0
+    image_width: 640
+    image_height: 480
+    max_features: 500
+navigation_node:
+  ros__parameters:
+    declination: 0.2

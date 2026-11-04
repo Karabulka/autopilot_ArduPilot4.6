@@ -1,0 +1,22 @@
+# glider_visual_nav contracts
+
+- Sprint 1 is limited to this file, `src/glider_visual_nav`, and isolated build/test outputs. Do not modify PX4 sources, board files, or simulation submodules without a later explicit request.
+- Sprint 2 explicitly authorizes the DDS profiles, Gazebo bench assets in Tools/simulation/gz, magnetic conversion/server configuration in PX4, and their builds/tests. Do not use bench pose commands or ground truth as navigation inputs.
+- Sprint 3 authorizes the GPS-denied airframe, DDS topic registration, PX4 attitude interface, measured IMU/barometric height integration, dynamic simulator/evaluator systems and closed-loop simulator trials. Simulator initial-condition injection is a test fixture only, never a navigation input. Do not change unrelated user files.
+- GPS, NavSat, simulator ground truth and simulator poses/velocities must never be navigation/guidance inputs. Ground truth is only permitted in a separate evaluator.
+- W / `odom`: right-handed ENU, X east, Y north, Z up. Yaw is zero east and increases counterclockwise.
+- B / `base_link`: right-handed FLU, x forward, y left, z up.
+- C / `camera_optical_frame`: x image-right, y image-down, z optical axis; camera looks down and image-top points toward the nose.
+- R_AB maps B coordinates into A. `R_BC = [[0,-1,0],[-1,0,0],[0,0,-1]]`, determinant +1.
+- `R_WB = Rz(yaw) Ry(pitch) Rx(roll)`. Positive roll banks right; positive FLU Euler pitch lowers the nose. Physical pitch-up is minus FLU Euler pitch.
+- FRD <- FLU = diag(1,-1,-1); NED <- ENU = [[0,1,0],[1,0,0],[0,0,-1]].
+- Use metres, seconds, radians, tesla. Pixel flow is current minus previous feature position, opposite camera translation.
+- Sprint 2 bench: declination D=+0.2 rad east of true north, horizontal field 25 microtesla, vertical field -42 microtesla. W field = [25e-6*sin(D),25e-6*cos(D),-42e-6] T. PX4 sensor_mag = 1e4*diag(1,-1,-1)*B_B (Gauss/FRD); ROS receives B_B unchanged (Tesla/FLU).
+- WSL mirrored networking drops UDP payloads larger than the 1500-byte path MTU despite lo advertising 65536. Launch all ROS peers with config/fastdds_wsl.xml (UDPv4 loopback, RTPS maxMessageSize=1200). Set the profile before ROS initialization; discovery alone is not a delivery test.
+- Image/CameraInfo frame is optical. MagneticField and Imu are in base_link. IMU quaternion maps FLU body into ENU; gyro is FLU body rad/s. Legacy Gazebo magnetic units/axes must be corrected upstream, never hidden in a TF reflection.
+- Height is optical-centre AGL above flat ground. Constant odometry Z is an assumption, not an independent altitude measurement.
+- `homography_mag`: horizontal h=const, robust planar homography estimates in-plane rotation/translation; navigation yaw comes from the magnetometer. `imu_aided`: time-aligned roll/pitch and gyro compensate tilt and optical rotation.
+- Every package target must require C++17. Do not change the PX4 root C++ standard.
+- Source `/opt/ros/jazzy/setup.bash`. Colcon discovery must use ONLY `--base-paths /home/nikol/autopilot/src/glider_visual_nav`, never the PX4 repository root.
+- Isolated outputs: `/home/nikol/autopilot/build_visual_nav`, `/home/nikol/autopilot/install_visual_nav`, `/home/nikol/autopilot/log_visual_nav`.
+- Run GTests with colcon test and inspect colcon test-result. Explicitly report simulator/flight behavior that has not been verified.

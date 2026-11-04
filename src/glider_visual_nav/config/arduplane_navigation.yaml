@@ -1,0 +1,67 @@
+/**:
+  ros__parameters:
+    use_sim_time: true
+    orientation_mode: imu_aided
+    flight_regime: unpowered_glide
+    dynamic_height: true
+    h: 40.0
+    body_frame: base_link
+    world_frame: odom
+    optical_frame: camera_optical_frame
+    camera_offset_body:
+    - 0.0
+    - 0.0
+    - -0.25
+    max_dt: 0.25
+    max_sensor_age: 0.3
+optical_flow_node:
+  ros__parameters:
+    fx: 269.968
+    fy: 269.968
+    cx: 320.0
+    cy: 240.0
+    image_width: 640
+    image_height: 480
+    max_features: 300
+    min_inliers: 12
+    fb_threshold: 0.5
+    ransac_threshold: 1.5
+    max_lk_error: 40.0
+    horizontal_tolerance: 0.05
+    velocity_noise_floor: 0.02
+navigation_node:
+  ros__parameters:
+    declination: 0.2
+    yaw_variance: 0.0025
+    tilt_variance: 0.0025
+    min_field_tesla: 1.0e-06
+    max_field_tesla: 0.001
+los_controller_node:
+  ros__parameters:
+    waypoints:
+    - 0.0
+    - 0.0
+    - 100.0
+    - 0.0
+    - 100.0
+    - 100.0
+    - 0.0
+    - 100.0
+    loop_waypoints: true
+    waypoint_acceptance: 18.0
+    lookahead: 40.0
+    max_roll: 0.45
+    min_guidance_speed: 3.0
+    target_height: 40.0
+    pitch_trim_up: -0.025
+    min_pitch_up: -0.18
+    max_pitch_up: 0.25
+    max_roll_setpoint_rate: 0.5
+    max_pitch_setpoint_rate: 0.2
+    height_kp: 0.018
+    height_ki: 0.001
+    height_kd: 0.08
+    height_integral_limit: 20.0
+    glide_speed: 8.5
+    glide_speed_pitch_gain: 0.08
+    glide_speed_ki: 0.01

@@ -1,0 +1,12 @@
+{
+  "passed": false,
+  "test": "passive glide, no guided/armed control",
+  "guided_requested": true,
+  "active_samples": 0,
+  "frames": 1627,
+  "imu": 52,
+  "magnetometer": 5381,
+  "barometer": 1296,
+  "odometry": 0,
+  "error": "fixture/camera/navigation did not become ready"
+}

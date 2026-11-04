@@ -1,0 +1,14 @@
+{
+  "passed": false,
+  "test": "passive glide, no guided/armed control",
+  "guided_requested": true,
+  "active_samples": 0,
+  "frames": 739,
+  "imu": 1270,
+  "magnetometer": 2444,
+  "barometer": 1180,
+  "odometry": 718,
+  "guided_confirmed": true,
+  "armed": false,
+  "error": "SITL did not confirm GUIDED and normal arming"
+}

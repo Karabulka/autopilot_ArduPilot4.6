@@ -1,0 +1,50 @@
+/**:
+  ros__parameters:
+    use_sim_time: true
+    orientation_mode: imu_aided
+    dynamic_height: true
+    flight_regime: cruise_const_alt
+    max_sensor_age: 0.3
+    max_dt: 0.25
+    camera_offset_body: [0.0, 0.0, -0.25]
+optical_flow_node:
+  ros__parameters:
+    max_features: 300
+    fx: 269.968
+    fy: 269.968
+    cx: 320.0
+    cy: 240.0
+    image_width: 640
+    image_height: 480
+    max_lk_error: 40.0
+    fb_threshold: 0.5
+navigation_node:
+  ros__parameters:
+    declination: 0.2
+los_controller_node:
+  ros__parameters:
+    waypoints: [0.0, 0.0, 100.0, 0.0, 100.0, 100.0, 0.0, 100.0]
+    waypoint_acceptance: 18.0
+    lookahead: 40.0
+    max_roll: 0.45
+    target_height: 40.0
+    pitch_trim_up: -0.025
+    height_kp: 0.018
+    height_ki: 0.001
+    height_kd: 0.08
+    min_pitch_up: -0.18
+    max_pitch_up: 0.25
+    glide_speed: 8.5
+    glide_speed_pitch_gain: 0.08
+    glide_speed_ki: 0.01
+px4_interface_node:
+  ros__parameters:
+    auto_arm: true
+    cruise_thrust: 0.55
+    cruise_speed: 12.0
+    thrust_speed_kp: 0.08
+    thrust_speed_ki: 0.02
+    bootstrap_pitch_up: -0.025
+    initial_yaw: 0.0
+    ground_baro_altitude: 0.0
+    offboard_visual_timeout: 0.7

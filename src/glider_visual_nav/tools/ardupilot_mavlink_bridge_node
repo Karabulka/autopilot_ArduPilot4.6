@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+"""ArduPlane MAVLink 2 adapter. Never arms or changes flight mode."""
+import math
+import os
+import time
+
+os.environ['MAVLINK20'] = '1'
+from pymavlink import mavutil
+from scipy.spatial.transform import Rotation
+import numpy as np
+import rclpy
+from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
+from rclpy.qos import qos_profile_sensor_data as SENSOR
+from geometry_msgs.msg import PointStamped, PoseStamped
+from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Imu, MagneticField
+from std_msgs.msg import String
+from glider_visual_nav.msg import IntegratedOpticalFlow
+
+T = np.array([[0., 1., 0.], [1., 0., 0.], [0., 0., -1.]])
+S = np.diag([1., -1., -1.])
+
+
+def ned_attitude(q):
+    x, y, z, w = Rotation.from_matrix(T @ Rotation.from_quat(q).as_matrix() @ S).as_quat()
+    return [w, x, y, z]
+
+
+def pressure_height(pressure, reference):
+    if not (math.isfinite(pressure) and math.isfinite(reference) and pressure > 0 and reference > 0):
+        raise ValueError('invalid static pressure')
+    return 44330.0 * (1.0 - (pressure / reference) ** 0.190295)
+
+
+class Bridge(Node):
+    def __init__(self):
+        super().__init__('ardupilot_mavlink_bridge_node')
+        self.declare_parameter('endpoint', 'udpin:127.0.0.1:14550')
+        self.declare_parameter('baud', 921600)
+        self.declare_parameter('vehicle_system', 1)
+        self.declare_parameter('reference_pressure_hpa', 1013.25)
+        self.declare_parameter('send_external_velocity', False)
+        self.declare_parameter('send_external_pose', False)
+        self.declare_parameter('set_local_origin', False)
+        self.declare_parameter('publish_magnetometer', True)
+        self.declare_parameter('send_integrated_flow', False)
+        self.declare_parameter('enable_attitude_control', False)
+        self.declare_parameter('flight_regime', 'cruise_const_alt')
+        self.declare_parameter('cruise_thrust', 0.55)
+        self.link = mavutil.mavlink_connection(self.value('endpoint'), baud=self.value('baud'),
+                                               source_system=42, source_component=191)
+        self.imu = self.create_publisher(Imu, 'glider/imu', SENSOR)
+        self.mag = self.create_publisher(MagneticField, 'glider/magnetic_field', SENSOR)
+        self.height = self.create_publisher(PointStamped, 'glider/barometric_height', SENSOR)
+        self.state = self.create_publisher(String, 'glider/interface_state', 10)
+        self.create_subscription(PoseStamped, 'glider/target_pose', self.on_target, SENSOR)
+        self.create_subscription(Odometry, 'glider/odometry', self.on_odom, SENSOR)
+        self.create_subscription(IntegratedOpticalFlow, 'glider/integrated_optical_flow', self.on_flow, SENSOR)
+        self.target = self.heartbeat = None
+        self.target_rx = self.heartbeat_rx = self.odom_rx = -math.inf
+        self.next_heartbeat = 0.
+        self.last_attitude_rx = -math.inf
+        self.next_stream_request = 0.
+        self.next_origin = 0.
+        self.origin_confirmed = False
+        self.create_timer(0.02, self.tick)
+
+    def value(self, name):
+        return self.get_parameter(name).value
+
+    def header(self, msg, frame):
+        msg.header.frame_id = frame
+        msg.header.stamp = self.get_clock().now().to_msg()
+
+    def on_target(self, msg):
+        if msg.header.frame_id != 'odom':
+            return
+        q = msg.pose.orientation
+        raw = [q.x, q.y, q.z, q.w]
+        if not np.isfinite(raw).all() or abs(np.linalg.norm(raw)-1) > .05:
+            return
+        self.target = ned_attitude(raw)
+        self.target_rx = time.monotonic()
+
+    def on_odom(self, msg):
+        if msg.header.frame_id != 'odom' or msg.child_frame_id != 'base_link':
+            return
+        v = msg.twist.twist.linear
+        q = msg.pose.pose.orientation
+        raw = [q.x, q.y, q.z, q.w]
+        if not np.isfinite(raw + [v.x, v.y, v.z]).all() or abs(np.linalg.norm(raw)-1) > .05:
+            return
+        self.odom_rx = time.monotonic()
+        if not self.value('send_external_velocity') or self.heartbeat is None or time.monotonic()-self.heartbeat_rx > 2.:
+            return
+        transform = T @ Rotation.from_quat(raw).as_matrix()
+        velocity = transform @ [v.x, v.y, v.z]
+        covariance = transform @ np.array(msg.twist.covariance).reshape(6, 6)[:3, :3] @ transform.T
+        if np.isfinite(covariance).all():
+            stamp = msg.header.stamp.sec * 1_000_000 + msg.header.stamp.nanosec // 1000
+            self.link.mav.vision_speed_estimate_send(stamp, *velocity, covariance.flatten().tolist(), 0)
+            if self.value('send_external_pose'):
+                p = msg.pose.pose.position
+                if np.isfinite([p.x, p.y, p.z]).all():
+                    position = T @ [p.x, p.y, p.z]
+                    angles = Rotation.from_matrix(transform @ S).as_euler('xyz')
+                    self.link.mav.vision_position_estimate_send(stamp, *position, *angles)
+
+    def on_flow(self, msg):
+        if (not self.value('send_integrated_flow') or self.heartbeat is None
+                or time.monotonic()-self.heartbeat_rx > 2. or msg.integration_time_us == 0):
+            return
+        if not np.isfinite([msg.integrated_x, msg.integrated_y, *msg.integrated_gyro, msg.distance]).all():
+            return
+        stamp = msg.header.stamp.sec * 1_000_000 + msg.header.stamp.nanosec // 1000
+        self.link.mav.optical_flow_rad_send(stamp, msg.sensor_id, msg.integration_time_us,
+            msg.integrated_x, msg.integrated_y, *msg.integrated_gyro, msg.temperature,
+            msg.quality, msg.time_delta_distance_us, msg.distance)
+
+    def receive(self, packet, now):
+        kind = packet.get_type()
+        if kind == 'HEARTBEAT' and packet.autopilot == mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA:
+            self.heartbeat, self.heartbeat_rx = packet, now
+        elif kind == 'GPS_GLOBAL_ORIGIN':
+            self.origin_confirmed = True
+        elif kind == 'ATTITUDE':
+            values = [packet.roll, packet.pitch, packet.yaw, packet.rollspeed, packet.pitchspeed, packet.yawspeed]
+            if not np.isfinite(values).all():
+                return
+            msg = Imu()
+            self.header(msg, 'base_link')
+            q = Rotation.from_matrix(T @ Rotation.from_euler('xyz', values[:3]).as_matrix() @ S).as_quat()
+            msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w = q.tolist()
+            msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z = (S @ values[3:]).tolist()
+            msg.linear_acceleration_covariance[0] = -1.
+            self.imu.publish(msg)
+            self.last_attitude_rx = now
+        elif kind == 'RAW_IMU' and getattr(packet, 'id', 0) == 0 and self.value('publish_magnetometer'):
+            msg = MagneticField()
+            self.header(msg, 'base_link')
+            field = (S @ [packet.xmag, packet.ymag, packet.zmag]) * 1e-7
+            if np.linalg.norm(field) > 0:
+                msg.magnetic_field.x, msg.magnetic_field.y, msg.magnetic_field.z = field.tolist()
+                self.mag.publish(msg)
+        elif kind == 'SCALED_PRESSURE':
+            try:
+                height = pressure_height(packet.press_abs, self.value('reference_pressure_hpa'))
+            except ValueError:
+                return
+            msg = PointStamped()
+            self.header(msg, 'odom')
+            msg.point.z = height
+            self.height.publish(msg)
+
+    def tick(self):
+        now = time.monotonic()
+        for _ in range(64):
+            packet = self.link.recv_match(blocking=False)
+            if packet is None:
+                break
+            if packet.get_srcSystem() == self.value('vehicle_system'):
+                self.receive(packet, now)
+        hb = self.heartbeat
+        if hb is not None and now >= self.next_stream_request and now-self.last_attitude_rx > .5:
+            for msgid, interval in [(30, 20000), (27, 20000), (29, 40000)]:
+                self.link.mav.command_long_send(hb.get_srcSystem(), hb.get_srcComponent(),
+                    mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0, msgid, interval, 0, 0, 0, 0, 0)
+            self.next_stream_request = now + 2.
+        if hb is not None and now >= self.next_heartbeat:
+            self.link.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, mavutil.mavlink.MAV_STATE_ACTIVE)
+            self.next_heartbeat = now + 1.
+        if hb is not None and self.value('set_local_origin') and not self.origin_confirmed and now >= self.next_origin:
+            # Fixed SITL reference, not a GNSS observation.
+            self.link.mav.set_gps_global_origin_send(hb.get_srcSystem(), 473977420, 85455940, 0)
+            self.next_origin = now + 5.
+        active = (hb is not None and now-self.heartbeat_rx < 2. and hb.custom_mode == 15
+                  and hb.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
+                  and now-self.target_rx < .5 and now-self.odom_rx < .5
+                  and self.value('enable_attitude_control'))
+        if active:
+            thrust = 0. if self.value('flight_regime') == 'unpowered_glide' else self.value('cruise_thrust')
+            if 0 <= thrust <= 1:
+                self.link.mav.set_attitude_target_send(int(now*1000) & 0xffffffff,
+                    hb.get_srcSystem(), hb.get_srcComponent(), 7, self.target, 0, 0, 0, thrust)
+        self.state.publish(String(data='ACTIVE' if active else 'ARDUPLANE_MONITOR'))
+
+
+def main():
+    rclpy.init()
+    node = Bridge()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        node.link.close()
+        node.destroy_node()
+        rclpy.try_shutdown()
+
+
+if __name__ == '__main__':
+    main()

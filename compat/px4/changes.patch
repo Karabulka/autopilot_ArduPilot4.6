@@ -1,0 +1,79 @@
+diff --git a/ROMFS/px4fmu_common/init.d-posix/airframes/CMakeLists.txt b/ROMFS/px4fmu_common/init.d-posix/airframes/CMakeLists.txt
+index b068b14aa1..9aa59998c4 100644
+--- a/ROMFS/px4fmu_common/init.d-posix/airframes/CMakeLists.txt
++++ b/ROMFS/px4fmu_common/init.d-posix/airframes/CMakeLists.txt
+@@ -73,6 +73,7 @@ px4_add_romfs_files(
+ 	4001_gz_x500
+ 	4002_gz_x500_depth
+ 	4003_gz_rc_cessna
++	4022_gz_rc_cessna_visual
+ 	4004_gz_standard_vtol
+ 	4005_gz_x500_vision
+ 	4006_gz_px4vision
+diff --git a/src/modules/simulation/gz_bridge/GZBridge.cpp b/src/modules/simulation/gz_bridge/GZBridge.cpp
+index ddf54a36cc..961bda3649 100644
+--- a/src/modules/simulation/gz_bridge/GZBridge.cpp
++++ b/src/modules/simulation/gz_bridge/GZBridge.cpp
+@@ -382,12 +382,12 @@ void GZBridge::magnetometerCallback(const gz::msgs::Magnetometer &msg)
+ 	report.device_id = id.devid;
+ 	report.temperature = this->_temperature;
+ 
+-	// FIMEX: once we're on jetty or later
+-	// The magnetometer plugin publishes in units of gauss and in a weird left handed coordinate system
+-	// https://github.com/gazebosim/gz-sim/pull/2460
+-	report.x = -msg.field_tesla().y();
+-	report.y = -msg.field_tesla().x();
+-	report.z = msg.field_tesla().z();
++	// Physical sensor FLU/Tesla -> PX4 FRD/Gauss. The rotation has determinant +1.
++	// Gazebo must use the matching corrected server.config (or the fixed-field bench system).
++	constexpr double tesla_to_gauss = 1e4;
++	report.x = tesla_to_gauss * msg.field_tesla().x();
++	report.y = -tesla_to_gauss * msg.field_tesla().y();
++	report.z = -tesla_to_gauss * msg.field_tesla().z();
+ 
+ 	_sensor_mag_pub.publish(report);
+ }
+diff --git a/src/modules/simulation/gz_bridge/server.config b/src/modules/simulation/gz_bridge/server.config
+index 0001356a3a..8bbdbf69fb 100644
+--- a/src/modules/simulation/gz_bridge/server.config
++++ b/src/modules/simulation/gz_bridge/server.config
+@@ -9,7 +9,10 @@
+     <plugin entity_name="*" entity_type="world" filename="gz-sim-air-speed-system" name="gz::sim::systems::AirSpeed"/>
+     <plugin entity_name="*" entity_type="world" filename="gz-sim-apply-link-wrench-system" name="gz::sim::systems::ApplyLinkWrench"/>
+     <plugin entity_name="*" entity_type="world" filename="gz-sim-navsat-system" name="gz::sim::systems::NavSat"/>
+-    <plugin entity_name="*" entity_type="world" filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer"/>
++    <plugin entity_name="*" entity_type="world" filename="gz-sim-magnetometer-system" name="gz::sim::systems::Magnetometer">
++      <use_units_gauss>false</use_units_gauss>
++      <use_earth_frame_ned>false</use_earth_frame_ned>
++    </plugin>
+     <plugin entity_name="*" entity_type="world" filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+       <render_engine>ogre2</render_engine>
+     </plugin>
+diff --git a/src/modules/uxrce_dds_client/dds_topics.yaml b/src/modules/uxrce_dds_client/dds_topics.yaml
+index 5ed398d1c2..f30fe64450 100644
+--- a/src/modules/uxrce_dds_client/dds_topics.yaml
++++ b/src/modules/uxrce_dds_client/dds_topics.yaml
+@@ -50,8 +50,21 @@ publications:
+     type: px4_msgs::msg::TimesyncStatus
+     rate_limit: 10.
+ 
+-  # - topic: /fmu/out/vehicle_angular_velocity
+-  #   type: px4_msgs::msg::VehicleAngularVelocity
++  - topic: /fmu/out/vehicle_angular_velocity
++    type: px4_msgs::msg::VehicleAngularVelocity
++    rate_limit: 100.
++
++  - topic: /fmu/out/vehicle_air_data
++    type: px4_msgs::msg::VehicleAirData
++    rate_limit: 50.
++
++  - topic: /fmu/out/actuator_motors
++    type: px4_msgs::msg::ActuatorMotors
++    rate_limit: 20.
++
++  - topic: /fmu/out/vehicle_attitude_setpoint
++    type: px4_msgs::msg::VehicleAttitudeSetpoint
++    rate_limit: 25.
+ 
+   - topic: /fmu/out/vehicle_land_detected
+     type: px4_msgs::msg::VehicleLandDetected

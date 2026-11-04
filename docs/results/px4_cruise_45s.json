@@ -1,0 +1,83 @@
+{
+  "regime": "cruise_const_alt",
+  "initial_optical_height": 40,
+  "passed": true,
+  "metrics": {
+    "samples": 1307,
+    "velocity_rmse_xy": [
+      0.0706422225785512,
+      0.12115614066651753
+    ],
+    "yaw_rmse_deg": 1.074458123407665,
+    "yaw_rmse_banked_deg": 1.1562310213322788,
+    "final_drift_m": 6.504441110262719,
+    "path_m": 529.9302686001367,
+    "drift_percent": 1.2274145289803589,
+    "cross_track_rmse_m": 11.936352432060405,
+    "max_cross_track_m": 22.839893330822278,
+    "achieved_waypoint_targets": [
+      [
+        100.0,
+        0.0
+      ],
+      [
+        100.0,
+        100.0
+      ],
+      [
+        0.0,
+        100.0
+      ],
+      [
+        0.0,
+        0.0
+      ]
+    ],
+    "min_height": 39.23864570215897,
+    "max_height": 40.75448634112004,
+    "max_thrust": 0.6413699984550476,
+    "actual_motor_max": 0.6413699388504028,
+    "gazebo_motor_command_max_rad_s": 641.0,
+    "height_rmse_40m": 0.3775087537917525,
+    "cross_track_rmse_straight_m": 11.825308611023761,
+    "cross_track_rmse_waypoint_change_m": 12.110610920522683,
+    "velocity_rmse_banked_xy": [
+      0.05654235809850397,
+      0.12845254797590572
+    ],
+    "longest_navigation_gap_s": 0.3960000000000008,
+    "roll_rmse_deg": 0.6915200752353886,
+    "pitch_rmse_deg": 0.3408066332815122,
+    "setpoint_received_rate_hz": 63.611229264142914
+  },
+  "states": [
+    {
+      "t": 0.0,
+      "state": "WAIT_SENSORS"
+    },
+    {
+      "t": 1.788,
+      "state": "PRESTREAM"
+    },
+    {
+      "t": 2.996,
+      "state": "REQUEST_OFFBOARD"
+    },
+    {
+      "t": 3.008,
+      "state": "REQUEST_ARM"
+    },
+    {
+      "t": 3.824,
+      "state": "ACTIVE"
+    }
+  ],
+  "gps_parameters": {
+    "SYS_HAS_GPS": "Symbols: x = used, + = saved, * = unsaved\nx + SYS_HAS_GPS [1043,1578] : 0\n\n 1071/1936 parameters used.",
+    "SIM_GPS_USED": "Symbols: x = used, + = saved, * = unsaved\nx + SIM_GPS_USED [914,1441] : 0\n\n 1071/1936 parameters used.",
+    "EKF2_GPS_CTRL": "Symbols: x = used, + = saved, * = unsaved\nx + EKF2_GPS_CTRL [396,585] : 0\n\n 1071/1936 parameters used."
+  },
+  "launch_time": 3.824,
+  "end_time": 48.824,
+  "px4_ulog": "/home/nikol/autopilot/log_visual_nav/cruise_final.ulg"
+}

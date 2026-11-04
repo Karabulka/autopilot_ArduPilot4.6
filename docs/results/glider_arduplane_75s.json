@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "test": "passive glide, no guided/armed control",
+  "frames": 2230,
+  "imu": 3783,
+  "magnetometer": 7540,
+  "barometer": 3666,
+  "odometry": 505,
+  "sim_seconds": 75.00800000000001,
+  "airborne_seconds": 19.567999999999998,
+  "final_position": [
+    309.06041670205633,
+    3.817046141098694,
+    0.05999891565016773
+  ],
+  "minimum_height": 0.05366747206363573,
+  "peak_speed": 17.31764837062915
+}
