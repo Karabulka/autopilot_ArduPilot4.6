@@ -113,4 +113,5 @@ include.find('name').text = 'glider_visual'
 node(world.find("plugin[@filename='libFlightFixtureSystem.so']"), 'model_name', 'glider_visual')
 write(world_tree.getroot(), pkg/'simulation/worlds/glider_visual.sdf')
 include.find("uri").text = 'model://glider_visual/arduplane.sdf'
+include.find("pose").text = "0 0 145.25 0 0 0"
 write(world_tree.getroot(), pkg/'simulation/worlds/arduplane_glider_visual.sdf')

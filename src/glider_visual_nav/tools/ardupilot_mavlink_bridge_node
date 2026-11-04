@@ -3,6 +3,7 @@
 import math
 import os
 import time
+from statistics import median
 
 os.environ['MAVLINK20'] = '1'
 from pymavlink import mavutil
@@ -10,6 +11,7 @@ from scipy.spatial.transform import Rotation
 import numpy as np
 import rclpy
 from rclpy.node import Node
+from rclpy.clock import Clock, ClockType
 from rclpy.executors import ExternalShutdownException
 from rclpy.qos import qos_profile_sensor_data as SENSOR
 from geometry_msgs.msg import PointStamped, PoseStamped
@@ -37,6 +39,10 @@ class Bridge(Node):
     def __init__(self):
         super().__init__('ardupilot_mavlink_bridge_node')
         self.declare_parameter('endpoint', 'udpin:127.0.0.1:14550')
+        self.declare_parameter('initial_body_height_m', -1.0)
+        self.declare_parameter('send_legacy_flow', False)
+        self.baro_offset = None
+        self.baro_startup = []
         self.declare_parameter('baud', 921600)
         self.declare_parameter('vehicle_system', 1)
         self.declare_parameter('reference_pressure_hpa', 1013.25)
@@ -64,7 +70,7 @@ class Bridge(Node):
         self.next_stream_request = 0.
         self.next_origin = 0.
         self.origin_confirmed = False
-        self.create_timer(0.02, self.tick)
+        self.create_timer(0.02, self.tick, clock=Clock(clock_type=ClockType.STEADY_TIME))
 
     def value(self, name):
         return self.get_parameter(name).value
@@ -117,10 +123,17 @@ class Bridge(Node):
         self.link.mav.optical_flow_rad_send(stamp, msg.sensor_id, msg.integration_time_us,
             msg.integrated_x, msg.integrated_y, *msg.integrated_gyro, msg.temperature,
             msg.quality, msg.time_delta_distance_us, msg.distance)
+        if self.value('send_legacy_flow'):
+            # Legacy fields are signed pixel displacement, supplied by the sensor.
+            self.link.mav.optical_flow_send(stamp, msg.sensor_id, msg.flow_px_x,
+                msg.flow_px_y, 0., 0., msg.quality, msg.distance)
 
     def receive(self, packet, now):
         kind = packet.get_type()
         if kind == 'HEARTBEAT' and packet.autopilot == mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA:
+            if now-self.heartbeat_rx > 2.:
+                self.next_stream_request = self.next_origin = 0.
+                self.origin_confirmed = False
             self.heartbeat, self.heartbeat_rx = packet, now
         elif kind == 'GPS_GLOBAL_ORIGIN':
             self.origin_confirmed = True
@@ -150,7 +163,14 @@ class Bridge(Node):
                 return
             msg = PointStamped()
             self.header(msg, 'odom')
-            msg.point.z = height
+            initial = self.value('initial_body_height_m')
+            if self.baro_offset is None and initial >= 0.:
+                self.baro_startup.append(height)
+                if len(self.baro_startup) < 25:
+                    return
+                self.baro_offset = initial - median(self.baro_startup)
+                self.baro_startup.clear()
+            msg.point.z = height + (self.baro_offset or 0.)
             self.height.publish(msg)
 
     def tick(self):
@@ -162,18 +182,23 @@ class Bridge(Node):
             if packet.get_srcSystem() == self.value('vehicle_system'):
                 self.receive(packet, now)
         hb = self.heartbeat
-        if hb is not None and now >= self.next_stream_request and now-self.last_attitude_rx > .5:
-            for msgid, interval in [(30, 20000), (27, 20000), (29, 40000)]:
+        if hb is not None and now >= self.next_stream_request and now-self.heartbeat_rx < 2.:
+            for msgid, interval in [(30, 20000), (27, 20000), (29, 40000), (32, 100000)]:
                 self.link.mav.command_long_send(hb.get_srcSystem(), hb.get_srcComponent(),
                     mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0, msgid, interval, 0, 0, 0, 0, 0)
-            self.next_stream_request = now + 2.
-        if hb is not None and now >= self.next_heartbeat:
+            self.next_stream_request = now + 5.
+        if now >= self.next_heartbeat and (hb is not None or not self.value('endpoint').startswith('udpin:')):
             self.link.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
                 mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, mavutil.mavlink.MAV_STATE_ACTIVE)
             self.next_heartbeat = now + 1.
-        if hb is not None and self.value('set_local_origin') and not self.origin_confirmed and now >= self.next_origin:
+        if hb is not None and self.value('set_local_origin') and now-self.heartbeat_rx < 2. and now >= self.next_origin:
             # Fixed SITL reference, not a GNSS observation.
-            self.link.mav.set_gps_global_origin_send(hb.get_srcSystem(), 473977420, 85455940, 0)
+            if not self.origin_confirmed:
+                self.link.mav.set_gps_global_origin_send(hb.get_srcSystem(), 473977420, 85455940, 0)
+            if not hb.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED:
+                self.link.mav.command_int_send(hb.get_srcSystem(), hb.get_srcComponent(),
+                    mavutil.mavlink.MAV_FRAME_GLOBAL, mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                    0, 0, 0, 0, 0, 0, 473977420, 85455940, 0.)
             self.next_origin = now + 5.
         active = (hb is not None and now-self.heartbeat_rx < 2. and hb.custom_mode == 15
                   and hb.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED

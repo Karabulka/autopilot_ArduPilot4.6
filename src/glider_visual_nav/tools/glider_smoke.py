@@ -41,6 +41,8 @@ def main():
     truth = None
     start_stamp = None
     airborne_until = None
+    first_airborne = None
+    airborne_samples = 0
     airspeed = 0.
     minimum_height = math.inf
 
@@ -50,7 +52,7 @@ def main():
         processes.append(subprocess.Popen(command, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True))
 
     def on_truth(msg):
-        nonlocal truth, airborne_until, airspeed, minimum_height
+        nonlocal truth, airborne_until, airspeed, minimum_height, first_airborne, airborne_samples
         p = msg.pose.pose.position
         v = msg.twist.twist.linear
         stamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
@@ -62,6 +64,9 @@ def main():
             airspeed = max(airspeed, speed)
             if p.z > 2. and speed > 5.:
                 airborne_until = stamp
+                if first_airborne is None:
+                    first_airborne = stamp
+                airborne_samples += 1
 
     def on_camera(msg):
         if msg.width == 640 and msg.height == 480 and len(msg.data) >= 640*480:
@@ -145,7 +150,12 @@ def main():
         result.update(sim_seconds=truth[0]-start_stamp,
                       airborne_seconds=max(0., (airborne_until or start_stamp)-start_stamp),
                       final_position=truth[1:], minimum_height=minimum_height, peak_speed=airspeed)
-        result['passed'] = airspeed > 8. and result['airborne_seconds'] >= 5. and result['frames'] > 30 and (not args.guided or result['active_samples'] > 10)
+        result['first_airborne_sim_time'] = first_airborne
+        result['airborne_samples'] = airborne_samples
+        result['passed'] = airspeed > 8. and result['airborne_seconds'] >= 5. and result['frames'] > 30 and (not args.guided or
+            (result['active_samples'] > 10 and minimum_height > 2. and
+             airborne_until is not None and truth[0]-airborne_until < .5 and
+             first_airborne is not None and airborne_until-first_airborne >= args.duration-2.))
     except Exception as error:
         result['error'] = str(error)
     finally:

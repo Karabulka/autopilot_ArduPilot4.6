@@ -9,3 +9,6 @@ int16 temperature
 uint8 quality
 uint32 time_delta_distance_us
 float32 distance
+# Legacy OPTICAL_FLOW pixel displacement, supplied by the sensor.
+int16 flow_px_x
+int16 flow_px_y

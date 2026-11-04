@@ -38,6 +38,8 @@ public:
     width_ = parameter(*this, "image_width", 1280); height_ = parameter(*this, "image_height", 960);
     body_frame_ = parameter(*this, "body_frame", std::string("base_link"));
     optical_frame_ = parameter(*this, "optical_frame", std::string("camera_optical_frame"));
+    imu_camera_time_offset_ = parameter(*this, "imu_camera_time_offset", 0.0);
+    if (!std::isfinite(imu_camera_time_offset_)) {throw std::invalid_argument("invalid IMU time offset");}
     sensor_age_ = parameter(*this, "max_sensor_age", 0.15);
     dynamic_height_ = parameter(*this, "dynamic_height", false);
     camera_offset_ = config.camera_offset_body;
@@ -117,11 +119,12 @@ private:
     MotionSample motion;
     if (mode_ == OrientationMode::ImuAided) {
       const double midpoint = previous_image_stamp_ ? 0.5 * (stamp + *previous_image_stamp_) : stamp;
-      const auto sample = imu_.sample(midpoint, sensor_age_, interpolateImu);
+      const auto sample = imu_.sample(midpoint + imu_camera_time_offset_, sensor_age_, interpolateImu);
       if (!sample) {odometry_->reset(); previous_image_stamp_.reset(); warn("missing time-aligned IMU"); return;}
       motion = motionSample(*sample);
       if (previous_image_stamp_ && stamp > *previous_image_stamp_) {
-        const auto mean = imu_.meanVector(*previous_image_stamp_, stamp, sensor_age_,
+        const auto mean = imu_.meanVector(*previous_image_stamp_ + imu_camera_time_offset_,
+          stamp + imu_camera_time_offset_, sensor_age_,
           [](const ImuSample & value) {return value.gyro;});
         if (!mean) {warn("camera interval not bracketed by IMU; using midpoint gyro");}
         else {motion.angular_velocity_body = *mean;}
@@ -171,6 +174,7 @@ private:
   cv::Vec3d camera_offset_;
   TimeBuffer<double> heights_;
   double sensor_age_;
+  double imu_camera_time_offset_;
   std::string body_frame_, optical_frame_;
   std::optional<double> previous_image_stamp_;
   TimeBuffer<ImuSample> imu_;

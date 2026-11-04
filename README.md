@@ -86,6 +86,8 @@ bash src/glider_visual_nav/tools/demo.sh ardupilot dashboard
 bash src/glider_visual_nav/tools/demo.sh ardupilot gui
 ```
 
+В мире ArduPlane камера стартует на 145 м над плоскостью. Подробнее о тарировке, фазе IMU и текущем результате: [отчет 5 ноября](docs/ARDUPLANE_2026-11-05.md), [итог проверки](docs/results/arduplane_guided_2026-11-05.json).
+
 Команда ardupilot fly один раз освобождает испытательное крепление и задает
 начальные 16 м/с. Это воздушный старт, не алгоритм взлета.
 Мост по умолчанию наблюдает и не армирует самолет. Команды ориентации
