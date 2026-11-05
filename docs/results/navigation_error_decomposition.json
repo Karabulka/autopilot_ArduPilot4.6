@@ -1,0 +1,19 @@
+{
+  "source": "log_visual_nav/dashboard_20261105_091401.jsonl",
+  "samples": 299,
+  "all": {
+    "samples": 299,
+    "roll_rmse_deg": 13.316464639672304,
+    "yaw_rmse_deg": 15.49548912780953,
+    "vx_rmse": 14.966547337776447,
+    "vy_rmse": 25.58769815847292
+  },
+  "banked": {
+    "samples": 196,
+    "roll_rmse_deg": 12.36892035761237,
+    "yaw_rmse_deg": 12.770162039652558,
+    "vx_rmse": 8.872958585575898,
+    "vy_rmse": 20.509688825361263
+  },
+  "note": "Recorded observation window, not full flight. Roll and velocity errors are distinct; no time offset is inferred from aggregate RMSE."
+}

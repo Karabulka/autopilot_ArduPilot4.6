@@ -134,3 +134,14 @@ TEST(TimeBuffer, IntegratesGyroAcrossUnevenKnots)
   EXPECT_FALSE(buffer.meanVector(.5, 3.1, 2., identity));
   EXPECT_FALSE(buffer.meanVector(.5, 2., 1., identity));
 }
+
+TEST(TimeBuffer, RequiresBothFrameEndpointsBeforeProcessing)
+{
+  gv::TimeBuffer<cv::Vec3d> buffer;
+  buffer.push(1., {0., 0., 0.});
+  buffer.push(1.02, {0., 0., 0.});
+  EXPECT_FALSE(buffer.covers(1.01, 1.03));
+  buffer.push(1.04, {0., 0., 0.});
+  EXPECT_TRUE(buffer.covers(1.01, 1.03));
+  EXPECT_FALSE(buffer.covers(.99, 1.03));
+}

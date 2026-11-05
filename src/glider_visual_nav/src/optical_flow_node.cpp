@@ -64,7 +64,7 @@ public:
       imu_sub_ = create_subscription<sensor_msgs::msg::Imu>("glider/imu", rclcpp::SensorDataQoS(),
         [this](sensor_msgs::msg::Imu::ConstSharedPtr msg) {
           const auto value = imuSample(*msg, body_frame_);
-          if (value) {imu_.push(seconds(msg->header.stamp), *value);}
+          if (value) {imu_.push(seconds(msg->header.stamp), *value); drainImages();}
         });
     }
     rclcpp::PublisherOptions tf_options;
@@ -110,6 +110,34 @@ private:
     } catch (const std::exception & e) {warn(e.what());}
   }
   void image(const sensor_msgs::msg::Image::ConstSharedPtr & msg)
+  {
+    if (mode_ != OrientationMode::ImuAided) {processImage(msg); return;}
+    if (!pending_images_.empty() && seconds(msg->header.stamp) < seconds(pending_images_.back()->header.stamp)) {
+      pending_images_.clear(); odometry_->reset(); previous_image_stamp_.reset();
+    }
+    pending_images_.push_back(msg);
+    while (pending_images_.size() > 6) {
+      pending_images_.pop_front(); odometry_->reset(); previous_image_stamp_.reset();
+      warn("IMU queue overflow; image pair reset");
+    }
+    drainImages();
+  }
+  void drainImages()
+  {
+    while (!pending_images_.empty()) {
+      const auto msg = pending_images_.front();
+      const double t = seconds(msg->header.stamp);
+      if (now().seconds() > t + sensor_age_) {
+        pending_images_.pop_front(); odometry_->reset(); previous_image_stamp_.reset();
+        warn("IMU coverage timeout; image pair reset"); continue;
+      }
+      const double start = previous_image_stamp_.value_or(t) + imu_camera_time_offset_;
+      if (!imu_.covers(start, t + imu_camera_time_offset_)) {return;}
+      pending_images_.pop_front();
+      processImage(msg);
+    }
+  }
+  void processImage(const sensor_msgs::msg::Image::ConstSharedPtr & msg)
   {
     const double stamp = seconds(msg->header.stamp);
     RCLCPP_INFO_ONCE(get_logger(), "First image stamp=%.6f clock=%.6f frame=%s",
@@ -188,6 +216,7 @@ private:
   bool dynamic_height_{false};
   cv::Vec3d camera_offset_;
   TimeBuffer<double> heights_;
+  std::deque<sensor_msgs::msg::Image::ConstSharedPtr> pending_images_;
   double sensor_age_;
   double fixed_flow_height_;
   rclcpp::Publisher<glider_visual_nav::msg::IntegratedOpticalFlow>::SharedPtr flow_publisher_;

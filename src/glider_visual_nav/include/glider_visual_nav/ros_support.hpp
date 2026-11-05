@@ -65,6 +65,8 @@ template<class T>
 class TimeBuffer
 {
 public:
+  bool covers(double start, double end) const
+  {return !data_.empty() && start >= data_.front().first && end <= data_.back().first && end >= start;}
   void push(double stamp, const T & value)
   {
     if (!std::isfinite(stamp) || stamp < 0) {return;}
