@@ -29,6 +29,14 @@ class ArduPlaneBridgeTest(unittest.TestCase):
         self.assertAlmostEqual(force[2], -9.80665)
         self.assertAlmostEqual(force[1], 0., places=10)
 
+    def test_heading_conversion_all_cardinal_directions(self):
+        for yaw in (0., math.pi/2, math.pi, -math.pi/2):
+            q = bridge['Rotation'].from_euler('z', yaw).as_quat()
+            w, x, y, z = bridge['ned_attitude'](q)
+            actual = bridge['Rotation'].from_quat([x,y,z,w]).as_euler('xyz')[2]
+            expected = math.pi/2-yaw
+            self.assertAlmostEqual(math.atan2(math.sin(actual-expected), math.cos(actual-expected)), 0.)
+
     def test_pressure_agl(self):
         self.assertEqual(bridge['pressure_height'](1013.25, 1013.25), 0.)
         p = 1013.25 * (1.-40./44330.)**(1./.190295)

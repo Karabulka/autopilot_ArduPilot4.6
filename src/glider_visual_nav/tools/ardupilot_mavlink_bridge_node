@@ -69,6 +69,9 @@ class Bridge(Node):
         self.target_rx = self.heartbeat_rx = self.odom_rx = -math.inf
         self.counts = Counter({key: 0 for key in ("rx_ATTITUDE", "rx_RAW_IMU", "rx_SCALED_IMU2", "rx_HIGHRES_IMU", "imu_published", "reject_attitude_nonfinite", "reject_clock_not_started")})
         self.next_diagnostics = 0.
+        self.yaw_diagnostics = {}
+        self.raw_gyro = None
+        self.raw_gyro_rx = -math.inf
         self.next_heartbeat = 0.
         self.last_attitude_rx = -math.inf
         self.next_stream_request = 0.
@@ -102,6 +105,7 @@ class Bridge(Node):
         raw = [q.x, q.y, q.z, q.w]
         if not np.isfinite(raw + [v.x, v.y, v.z]).all() or abs(np.linalg.norm(raw)-1) > .05:
             return
+        self.yaw_diagnostics["nav_yaw_enu"] = Rotation.from_quat(raw).as_euler("xyz")[2]
         self.odom_rx = time.monotonic()
         if not self.value('send_external_velocity') or self.heartbeat is None or time.monotonic()-self.heartbeat_rx > 2.:
             return
@@ -115,8 +119,10 @@ class Bridge(Node):
             if self.value('send_external_pose'):
                 p = msg.pose.pose.position
                 if np.isfinite([p.x, p.y, p.z]).all():
-                    position = T @ [p.x, p.y, p.z]
+                    initial_height = max(0., self.value('initial_body_height_m'))
+                    position = T @ [p.x, p.y, p.z-initial_height]
                     angles = Rotation.from_matrix(transform @ S).as_euler('xyz')
+                    self.yaw_diagnostics["vision_yaw_ned"] = float(angles[2])
                     self.link.mav.vision_position_estimate_send(stamp, *position, *angles)
                     self.counts["tx_VISION_POSITION_ESTIMATE"] += 1
 
@@ -144,12 +150,21 @@ class Bridge(Node):
                 self.next_stream_request = self.next_origin = 0.
                 self.origin_confirmed = False
                 self.home_confirmed = False
+                for name in ('VISO_TYPE','EK3_SRC1_POSXY','EK3_SRC1_VELXY','EK3_SRC1_YAW','AHRS_EKF_TYPE'):
+                    self.link.mav.param_request_read_send(packet.get_srcSystem(), packet.get_srcComponent(), name.encode(), -1)
             self.heartbeat, self.heartbeat_rx = packet, now
         elif kind == 'HOME_POSITION':
             self.home_confirmed = True
         elif kind == 'GPS_GLOBAL_ORIGIN':
             self.origin_confirmed = True
+        elif kind == 'EKF_STATUS_REPORT':
+            self.yaw_diagnostics['ekf_flags'] = packet.flags
+        elif kind == 'PARAM_VALUE':
+            self.get_logger().info("PARAM "+str(packet.param_id)+"="+str(packet.param_value))
+        elif kind == 'AHRS2':
+            self.yaw_diagnostics['ahrs2_yaw'] = packet.yaw
         elif kind == 'ATTITUDE':
+            self.yaw_diagnostics['attitude_yaw'] = packet.yaw
             values = [packet.roll, packet.pitch, packet.yaw, packet.rollspeed, packet.pitchspeed, packet.yawspeed]
             if not np.isfinite(values).all():
                 self.counts["reject_attitude_nonfinite"] += 1
@@ -163,19 +178,31 @@ class Bridge(Node):
             self.header(msg, 'base_link')
             q = Rotation.from_matrix(T @ Rotation.from_euler('xyz', values[:3]).as_matrix() @ S).as_quat()
             msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w = q.tolist()
-            msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z = (S @ values[3:]).tolist()
+            rates = self.raw_gyro if self.raw_gyro is not None and now-self.raw_gyro_rx < .2 else S @ values[3:]
+            msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z = rates.tolist()
             msg.linear_acceleration_covariance[0] = -1.
             self.imu.publish(msg)
             self.counts["imu_published"] += 1
             self.last_attitude_rx = now
-        elif kind == 'RAW_IMU' and getattr(packet, 'id', 0) == 0 and self.value('publish_magnetometer'):
+        elif kind == 'RAW_IMU':
+            self.yaw_diagnostics['raw_mag_frd_milligauss'] = [packet.xmag, packet.ymag, packet.zmag]
+            self.raw_gyro = S @ np.array([packet.xgyro, packet.ygyro, packet.zgyro], dtype=float) * .001
+            self.raw_gyro_rx = now
+            if not self.value('publish_magnetometer'):
+                return
+            self.publish_mag(packet)
+        elif kind == 'SCALED_PRESSURE':
+            self.publish_pressure(packet)
+
+    def publish_mag(self, packet):
+        if getattr(packet, 'id', 0) == 0 and self.value('publish_magnetometer'):
             msg = MagneticField()
             self.header(msg, 'base_link')
             field = (S @ [packet.xmag, packet.ymag, packet.zmag]) * 1e-7
             if np.linalg.norm(field) > 0:
                 msg.magnetic_field.x, msg.magnetic_field.y, msg.magnetic_field.z = field.tolist()
                 self.mag.publish(msg)
-        elif kind == 'SCALED_PRESSURE':
+    def publish_pressure(self, packet):
             try:
                 height = pressure_height(packet.press_abs, self.value('reference_pressure_hpa'))
             except ValueError:
@@ -203,10 +230,10 @@ class Bridge(Node):
         hb = self.heartbeat
         if now >= self.next_diagnostics:
             self.get_logger().info("MAVLINK_DIAGNOSTICS "+json.dumps(dict(self.counts), sort_keys=True)+
-                " ros_time="+str(self.get_clock().now().nanoseconds*1e-9))
+                " ros_time="+str(self.get_clock().now().nanoseconds*1e-9)+" YAW="+json.dumps(self.yaw_diagnostics))
             self.next_diagnostics = now+5.
         if hb is not None and now >= self.next_stream_request and now-self.heartbeat_rx < 2. and now-self.last_attitude_rx > .5:
-            for msgid, interval in [(30, 20000), (27, 20000), (29, 40000), (32, 100000)]:
+            for msgid, interval in [(30, 20000), (27, 20000), (29, 40000), (32, 100000), (178, 100000)]:
                 self.link.mav.command_long_send(hb.get_srcSystem(), hb.get_srcComponent(),
                     mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0, msgid, interval, 0, 0, 0, 0, 0)
             self.next_stream_request = now + 5.
@@ -217,7 +244,7 @@ class Bridge(Node):
         if hb is not None and self.value('set_local_origin') and now-self.heartbeat_rx < 2. and now >= self.next_origin:
             # Fixed SITL reference, not a GNSS observation.
             if not self.origin_confirmed:
-                self.link.mav.set_gps_global_origin_send(hb.get_srcSystem(), 473977420, 85455940, 0)
+                self.link.mav.set_gps_global_origin_send(hb.get_srcSystem(), 473977420, 85455940, int(max(0., self.value("initial_body_height_m"))*1000))
             if not self.home_confirmed and not hb.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED:
                 self.link.mav.command_int_send(hb.get_srcSystem(), hb.get_srcComponent(),
                     mavutil.mavlink.MAV_FRAME_GLOBAL, mavutil.mavlink.MAV_CMD_DO_SET_HOME,

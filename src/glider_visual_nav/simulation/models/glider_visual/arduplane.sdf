@@ -402,7 +402,7 @@
         <jointName>aileron_left_joint</jointName>
         <type>POSITION</type>
         <useForce>1</useForce>
-        <multiplier>0.9</multiplier>
+        <multiplier>-0.9</multiplier>
         <offset>-0.5</offset>
         <servo_min>1000</servo_min>
         <servo_max>2000</servo_max>
@@ -415,7 +415,7 @@
         <jointName>aileron_right_joint</jointName>
         <type>POSITION</type>
         <useForce>1</useForce>
-        <multiplier>-0.9</multiplier>
+        <multiplier>0.9</multiplier>
         <offset>-0.5</offset>
         <servo_min>1000</servo_min>
         <servo_max>2000</servo_max>

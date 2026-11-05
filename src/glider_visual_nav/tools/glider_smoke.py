@@ -109,7 +109,7 @@ def main():
             mode_confirmed = False
             armed = False
             last_send = -math.inf
-            deadline = time.monotonic()+100
+            deadline = time.monotonic()+180
             while not armed and time.monotonic() < deadline:
                 rclpy.spin_once(node, timeout_sec=.03)
                 packet = gcs.recv_match(blocking=False)

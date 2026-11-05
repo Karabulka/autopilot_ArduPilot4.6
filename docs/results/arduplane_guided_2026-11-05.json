@@ -1,16 +1,59 @@
 {
   "passed": false,
-  "test": "passive glide, no guided/armed control",
+  "test": "SITL GUIDED flight with normal arming",
   "guided_requested": true,
-  "active_samples": 0,
-  "frames": 2717,
-  "imu": 2833,
-  "magnetometer": 8964,
-  "barometer": 2041,
-  "odometry": 2625,
+  "active_samples": 3686,
+  "frames": 3398,
+  "imu": 3398,
+  "magnetometer": 11199,
+  "barometer": 2497,
+  "odometry": 2396,
   "guided_confirmed": true,
-  "armed": false,
-  "error": "SITL did not confirm GUIDED and normal arming",
-  "initial_body_height_m": 145.25,
-  "scope": "GUIDED initialization on launch fixture; no flight"
+  "armed": true,
+  "sim_seconds": 90.0,
+  "airborne_seconds": 90.0,
+  "final_position": [
+    268.01038599659546,
+    174.4698032870626,
+    12.911618547332894
+  ],
+  "minimum_height": 12.911618547332894,
+  "peak_speed": 19.221568634867374,
+  "first_airborne_sim_time": 26.192,
+  "airborne_samples": 5492,
+  "continuous_airborne_s": 87.904,
+  "horizontal_path_m": 812.2679567987617,
+  "quality_qualified": false,
+  "evaluation_window": {
+    "samples": 299,
+    "rmse_vx": 14.966547337776447,
+    "rmse_vy": 25.587698158472925,
+    "rmse_yaw_deg": 15.495489127809531,
+    "rmse_cross_track_m": 53.63105531551155,
+    "drift_m": 90.17826773014808,
+    "truth_path_m": 192.95029995172118,
+    "route": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        100.0,
+        0.0
+      ],
+      [
+        100.0,
+        100.0
+      ],
+      [
+        0.0,
+        100.0
+      ]
+    ],
+    "waypoint_switches": 0,
+    "chart_retention_seconds": 300,
+    "alignment": "First matched XY origin; no yaw/scale fit. Truth is evaluation only.",
+    "note": "Metrics since dashboard opening/reset; not a full-flight qualification."
+  },
+  "notes": "Flight completed and normal arming confirmed; strict smoke pass false because >2s to first airborne sample. Route accuracy not qualified. Evaluation metrics cover only the dashboard observation window."
 }

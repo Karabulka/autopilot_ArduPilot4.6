@@ -1,0 +1,15 @@
+diff --git a/libraries/AP_NavEKF3/AP_NavEKF3_core.cpp b/libraries/AP_NavEKF3/AP_NavEKF3_core.cpp
+index 2fb368c..8fedc59 100644
+--- a/libraries/AP_NavEKF3/AP_NavEKF3_core.cpp
++++ b/libraries/AP_NavEKF3/AP_NavEKF3_core.cpp
+@@ -473,7 +473,9 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
+     update_sensor_selection();
+ 
+     // If we are a plane and don't have GPS lock then don't initialise
+-    if (assume_zero_sideslip() && dal.gps().status(preferred_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
++    if (assume_zero_sideslip() &&
++        frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::EXTNAV &&
++        dal.gps().status(preferred_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
+         dal.snprintf(prearm_fail_string,
+                      sizeof(prearm_fail_string),
+                      "EKF3 init failure: No GPS lock");

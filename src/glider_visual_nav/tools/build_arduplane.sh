@@ -16,6 +16,12 @@ if [[ ! -d "$DEPS/ardupilot_gazebo/.git" ]]; then
   git -C "$DEPS/ardupilot_gazebo" checkout --detach FETCH_HEAD
 fi
 test "$(git -C "$DEPS/ardupilot_gazebo" rev-parse HEAD)" = "$GZ_COMMIT"
+for PATCH in "$ROOT"/src/glider_visual_nav/simulation/patches/*.patch; do
+if ! git -C "$DEPS/ardupilot" apply --reverse --check "$PATCH" 2>/dev/null; then
+  git -C "$DEPS/ardupilot" apply --check "$PATCH"
+  git -C "$DEPS/ardupilot" apply "$PATCH"
+fi
+done
 python3 -m venv --system-site-packages "$DEPS/python"
 "$DEPS/python/bin/pip" install pexpect future empy==3.3.4 pymavlink
 (

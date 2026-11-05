@@ -97,7 +97,7 @@ node(plugin, 'gazeboXYZToNED', '0 0 0 180 0 90', degrees='true')
 for channel, (name, *_rest) in zip((0, 4, 1, 3), surfaces):
     control = node(plugin, 'control', channel=str(channel))
     for key, value in dict(jointName=name+'_joint', type='POSITION', useForce=1,
-                           multiplier=-.9 if name == 'aileron_right' else .9,
+                           multiplier=-.9 if name == 'aileron_left' else .9,
                            offset=-.5, servo_min=1000, servo_max=2000,
                            p_gain=2, d_gain=.02, cmd_max=1, cmd_min=-1).items():
         node(control, key, value)
