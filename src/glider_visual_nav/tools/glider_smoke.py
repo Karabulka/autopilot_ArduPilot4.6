@@ -105,6 +105,7 @@ def main():
             if time.monotonic() > end or any(p.poll() is not None for p in processes):
                 raise RuntimeError('fixture/camera/navigation did not become ready')
         if args.guided:
+            home_sent = False
             mode_confirmed = False
             armed = False
             last_send = -math.inf
@@ -130,8 +131,10 @@ def main():
                     gcs.mav.command_long_send(1, 1, 176, 0, 1, 15, 0, 0, 0, 0, 0)
                 else:
                     # Fixed test reference, not a measured GNSS fix.
-                    gcs.mav.command_int_send(1, 1, 0, 179, 0, 0, 0, 0, 0, 0,
-                                             473977420, 85455940, 0.)
+                    if not home_sent:
+                        gcs.mav.command_int_send(1, 1, 0, 179, 0, 0, 0, 0, 0, 0,
+                                                 473977420, 85455940, 0.)
+                        home_sent = True
                     gcs.mav.command_long_send(1, 1, 400, 0, 1, 0, 0, 0, 0, 0, 0)
                 last_send = now
             result.update(guided_confirmed=mode_confirmed, armed=armed)

@@ -17,6 +17,18 @@ class ArduPlaneBridgeTest(unittest.TestCase):
         self.assertAlmostEqual(q[1], 0.)
         self.assertAlmostEqual(q[2], 0.)
 
+    def test_gazebo_imu_specific_force_is_frd(self):
+        import xml.etree.ElementTree as ET
+        root = Path(__file__).resolve().parents[1]
+        tree = ET.parse(root/'simulation/models/glider_visual/arduplane.sdf')
+        pose = tree.find(".//sensor[@type='imu']/pose")
+        self.assertIsNotNone(pose)
+        angles = [float(x) for x in pose.text.split()][3:]
+        sensor = bridge['Rotation'].from_euler('xyz', angles, degrees=True)
+        force = sensor.inv().apply([0., 0., 9.80665])
+        self.assertAlmostEqual(force[2], -9.80665)
+        self.assertAlmostEqual(force[1], 0., places=10)
+
     def test_pressure_agl(self):
         self.assertEqual(bridge['pressure_height'](1013.25, 1013.25), 0.)
         p = 1013.25 * (1.-40./44330.)**(1./.190295)

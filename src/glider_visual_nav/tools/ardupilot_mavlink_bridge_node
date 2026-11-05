@@ -3,6 +3,8 @@
 import math
 import os
 import time
+import json
+from collections import Counter
 from statistics import median
 
 os.environ['MAVLINK20'] = '1'
@@ -65,11 +67,14 @@ class Bridge(Node):
         self.create_subscription(IntegratedOpticalFlow, 'glider/integrated_optical_flow', self.on_flow, SENSOR)
         self.target = self.heartbeat = None
         self.target_rx = self.heartbeat_rx = self.odom_rx = -math.inf
+        self.counts = Counter({key: 0 for key in ("rx_ATTITUDE", "rx_RAW_IMU", "rx_SCALED_IMU2", "rx_HIGHRES_IMU", "imu_published", "reject_attitude_nonfinite", "reject_clock_not_started")})
+        self.next_diagnostics = 0.
         self.next_heartbeat = 0.
         self.last_attitude_rx = -math.inf
         self.next_stream_request = 0.
         self.next_origin = 0.
         self.origin_confirmed = False
+        self.home_confirmed = False
         self.create_timer(0.02, self.tick, clock=Clock(clock_type=ClockType.STEADY_TIME))
 
     def value(self, name):
@@ -106,12 +111,14 @@ class Bridge(Node):
         if np.isfinite(covariance).all():
             stamp = msg.header.stamp.sec * 1_000_000 + msg.header.stamp.nanosec // 1000
             self.link.mav.vision_speed_estimate_send(stamp, *velocity, covariance.flatten().tolist(), 0)
+            self.counts["tx_VISION_SPEED_ESTIMATE"] += 1
             if self.value('send_external_pose'):
                 p = msg.pose.pose.position
                 if np.isfinite([p.x, p.y, p.z]).all():
                     position = T @ [p.x, p.y, p.z]
                     angles = Rotation.from_matrix(transform @ S).as_euler('xyz')
                     self.link.mav.vision_position_estimate_send(stamp, *position, *angles)
+                    self.counts["tx_VISION_POSITION_ESTIMATE"] += 1
 
     def on_flow(self, msg):
         if (not self.value('send_integrated_flow') or self.heartbeat is None
@@ -127,19 +134,30 @@ class Bridge(Node):
             # Legacy fields are signed pixel displacement, supplied by the sensor.
             self.link.mav.optical_flow_send(stamp, msg.sensor_id, msg.flow_px_x,
                 msg.flow_px_y, 0., 0., msg.quality, msg.distance)
+            self.counts["tx_OPTICAL_FLOW"] += 1
 
     def receive(self, packet, now):
         kind = packet.get_type()
+        self.counts["rx_"+kind] += 1
         if kind == 'HEARTBEAT' and packet.autopilot == mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA:
             if now-self.heartbeat_rx > 2.:
                 self.next_stream_request = self.next_origin = 0.
                 self.origin_confirmed = False
+                self.home_confirmed = False
             self.heartbeat, self.heartbeat_rx = packet, now
+        elif kind == 'HOME_POSITION':
+            self.home_confirmed = True
         elif kind == 'GPS_GLOBAL_ORIGIN':
             self.origin_confirmed = True
         elif kind == 'ATTITUDE':
             values = [packet.roll, packet.pitch, packet.yaw, packet.rollspeed, packet.pitchspeed, packet.yawspeed]
             if not np.isfinite(values).all():
+                self.counts["reject_attitude_nonfinite"] += 1
+                if self.counts["reject_attitude_nonfinite"] == 1:
+                    self.get_logger().error("Nonfinite ATTITUDE: "+repr(values))
+                return
+            if self.get_parameter('use_sim_time').value and self.get_clock().now().nanoseconds == 0:
+                self.counts["reject_clock_not_started"] += 1
                 return
             msg = Imu()
             self.header(msg, 'base_link')
@@ -148,6 +166,7 @@ class Bridge(Node):
             msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z = (S @ values[3:]).tolist()
             msg.linear_acceleration_covariance[0] = -1.
             self.imu.publish(msg)
+            self.counts["imu_published"] += 1
             self.last_attitude_rx = now
         elif kind == 'RAW_IMU' and getattr(packet, 'id', 0) == 0 and self.value('publish_magnetometer'):
             msg = MagneticField()
@@ -182,7 +201,11 @@ class Bridge(Node):
             if packet.get_srcSystem() == self.value('vehicle_system'):
                 self.receive(packet, now)
         hb = self.heartbeat
-        if hb is not None and now >= self.next_stream_request and now-self.heartbeat_rx < 2.:
+        if now >= self.next_diagnostics:
+            self.get_logger().info("MAVLINK_DIAGNOSTICS "+json.dumps(dict(self.counts), sort_keys=True)+
+                " ros_time="+str(self.get_clock().now().nanoseconds*1e-9))
+            self.next_diagnostics = now+5.
+        if hb is not None and now >= self.next_stream_request and now-self.heartbeat_rx < 2. and now-self.last_attitude_rx > .5:
             for msgid, interval in [(30, 20000), (27, 20000), (29, 40000), (32, 100000)]:
                 self.link.mav.command_long_send(hb.get_srcSystem(), hb.get_srcComponent(),
                     mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0, msgid, interval, 0, 0, 0, 0, 0)
@@ -195,7 +218,7 @@ class Bridge(Node):
             # Fixed SITL reference, not a GNSS observation.
             if not self.origin_confirmed:
                 self.link.mav.set_gps_global_origin_send(hb.get_srcSystem(), 473977420, 85455940, 0)
-            if not hb.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED:
+            if not self.home_confirmed and not hb.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED:
                 self.link.mav.command_int_send(hb.get_srcSystem(), hb.get_srcComponent(),
                     mavutil.mavlink.MAV_FRAME_GLOBAL, mavutil.mavlink.MAV_CMD_DO_SET_HOME,
                     0, 0, 0, 0, 0, 0, 473977420, 85455940, 0.)

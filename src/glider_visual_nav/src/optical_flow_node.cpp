@@ -1,3 +1,4 @@
+#include <glider_visual_nav/msg/integrated_optical_flow.hpp>
 #include "glider_visual_nav/ros_support.hpp"
 #include "glider_visual_nav/nodes.hpp"
 #include <cv_bridge/cv_bridge.hpp>
@@ -22,6 +23,7 @@ public:
     config.mode = orientationMode(parameter(*this, "orientation_mode", std::string("homography_mag")));
     mode_ = config.mode;
     config.height = parameter(*this, "h", 40.0);
+    fixed_flow_height_ = config.height;
     config.max_features = parameter(*this, "max_features", 300);
     config.min_inliers = parameter(*this, "min_inliers", 12);
     config.fb_threshold = parameter(*this, "fb_threshold", 0.7);
@@ -52,6 +54,7 @@ public:
     if (width_ <= 0 || height_ <= 0 || body_frame_.empty() || optical_frame_.empty() ||
       body_frame_ == optical_frame_ || !std::isfinite(sensor_age_) || sensor_age_ <= 0)
     {throw std::invalid_argument("invalid frame, image dimensions or sensor age");}
+    flow_publisher_ = create_publisher<glider_visual_nav::msg::IntegratedOpticalFlow>("glider/integrated_optical_flow", 10);
     publisher_ = create_publisher<geometry_msgs::msg::TwistWithCovarianceStamped>("glider/visual_velocity", 10);
     info_sub_ = create_subscription<sensor_msgs::msg::CameraInfo>("camera/camera_info", rclcpp::SensorDataQoS(),
       [this](sensor_msgs::msg::CameraInfo::ConstSharedPtr msg) {cameraInfo(*msg);});
@@ -159,6 +162,18 @@ private:
         output.twist.covariance[(r + 3) * 6 + r + 3] = 1e6;
       }
       publisher_->publish(output);
+      // Derived translation-only flow, not independent raw optical evidence.
+      const double h = motion.optical_height > 0 ? motion.optical_height : fixed_flow_height_;
+      glider_visual_nav::msg::IntegratedOpticalFlow flow;
+      flow.header = output.header; flow.header.frame_id = optical_frame_;
+      flow.integration_time_us = static_cast<uint32_t>(result.dt * 1e6);
+      const auto vc = opticalToBody().t() * result.velocity_body;
+      flow.integrated_x = -vc[0] * result.dt / h;
+      flow.integrated_y = -vc[1] * result.dt / h;
+      flow.flow_px_x = static_cast<int16_t>(std::clamp(std::round(flow.integrated_x * camera_.fx), -32768., 32767.));
+      flow.flow_px_y = static_cast<int16_t>(std::clamp(std::round(flow.integrated_y * camera_.fy), -32768., 32767.));
+      flow.distance = h; flow.quality = static_cast<uint8_t>(255. * result.inliers / std::max(1, result.tracked));
+      flow_publisher_->publish(flow);
       if (!calibrated_) {warn("using configured fallback K until valid CameraInfo arrives");}
     } catch (const std::exception & e) {warn(e.what());}
   }
@@ -174,6 +189,8 @@ private:
   cv::Vec3d camera_offset_;
   TimeBuffer<double> heights_;
   double sensor_age_;
+  double fixed_flow_height_;
+  rclcpp::Publisher<glider_visual_nav::msg::IntegratedOpticalFlow>::SharedPtr flow_publisher_;
   double imu_camera_time_offset_;
   std::string body_frame_, optical_frame_;
   std::optional<double> previous_image_stamp_;

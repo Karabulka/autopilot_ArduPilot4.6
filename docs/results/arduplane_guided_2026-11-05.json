@@ -3,10 +3,14 @@
   "test": "passive glide, no guided/armed control",
   "guided_requested": true,
   "active_samples": 0,
-  "frames": 1635,
-  "imu": 52,
-  "magnetometer": 5397,
-  "barometer": 1280,
-  "odometry": 0,
-  "error": "fixture/camera/navigation did not become ready"
+  "frames": 2717,
+  "imu": 2833,
+  "magnetometer": 8964,
+  "barometer": 2041,
+  "odometry": 2625,
+  "guided_confirmed": true,
+  "armed": false,
+  "error": "SITL did not confirm GUIDED and normal arming",
+  "initial_body_height_m": 145.25,
+  "scope": "GUIDED initialization on launch fixture; no flight"
 }
