@@ -8,8 +8,10 @@ import shutil
 import subprocess
 import zipfile
 from pathlib import Path
+from render_supervisor_report import export_report
 
 NAMES = [
+    'SUPERVISOR_REPORT_RU',
     'ACCEPTANCE_2026-11-12', 'HARDWARE_BOM_AND_ARCHITECTURE',
     'AIRFRAME_MODEL_MAPPING_RU', 'DELIVERY_AUDIT_2026-11-12',
     'START_ARDUPILOT_RU', 'PROJECT_LAYOUT_RU', 'PROJECT_REQUIREMENTS_RU',
@@ -31,6 +33,7 @@ def digest(path):
 
 def export(destination, root):
     destination.mkdir(parents=True, exist_ok=True)
+    export_report(root, destination)
     docs = root / 'docs'
     links = []
     selected = []
@@ -112,6 +115,7 @@ def export(destination, root):
     artifact_links.insert(0, '<li><a href="artifacts/manifest.json">SHA256 manifest</a></li>')
     (destination / 'ОТКРЫТЬ.html').write_text(page(
         'Планер — материалы проекта',
+        '<p style="font-size:22px;font-weight:bold"><a href="ОТЧЕТ_ДЛЯ_РУКОВОДИТЕЛЯ.html">ОТЧЕТ ДЛЯ НАУЧНОГО РУКОВОДИТЕЛЯ — открыть / распечатать</a></p>\n'
         '<h1>Планер — материалы проекта</h1>'
         '<p>Приемка 12 ноября: passed=true; 27 тестов без ошибок. '
         'Физический носитель: Ranger 2400 PNP; параметры реального экземпляра требуют обмера.</p>'
