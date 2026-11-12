@@ -47,7 +47,7 @@ def build(source, output, font_dir):
         cells=[[para(c, 'cell') for c in row] for row in rows]
         table=Table(cells,colWidths=widths,repeatRows=1,hAlign='LEFT')
         table.setStyle(TableStyle([
-            
+
             ('GRID',(0,0),(-1,-1),.35,colors.HexColor('#555555')),
             ('VALIGN',(0,0),(-1,-1),'TOP'),
             ('LEFTPADDING',(0,0),(-1,-1),5),('RIGHTPADDING',(0,0),(-1,-1),5),
