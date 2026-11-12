@@ -20,3 +20,8 @@ PX4 не переносились и не удалялись.
 Текущая приемка — ACCEPTANCE_2026-11-12.md.
 Экспорт desktop: tools/export_documents.py DESTINATION.
 Объединитель критериев: tools/build_acceptance_report.py.
+
+Выбор носителя и закупка — HARDWARE_BOM_AND_ARCHITECTURE.md;
+сопоставление с SDF — AIRFRAME_MODEL_MAPPING_RU.md.
+Неактивные паспортные данные — simulation/models/glider_visual/physical_reference.json.
+Desktop-артефакты и контрольные суммы — DELIVERY_AUDIT_2026-11-12.md.

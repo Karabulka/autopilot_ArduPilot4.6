@@ -1,0 +1,104 @@
+{
+  "accepted_baseline_commit": "c717885ef1c44e7dbcf1740f01322ea1a755b220",
+  "verified_acceptance_files": {
+    "docs/results/acceptance_accuracy_20261112.json": {
+      "sha256": "22223e3fb72522c956c3cc778b730a5936b8eb3b3f1f24e9a34ff667bd4e3ebb",
+      "matches_accepted_publication": true
+    },
+    "docs/results/acceptance_transport_20261112.json": {
+      "sha256": "5a7ade8e2035ab6a13aaf7ed68fc0c9f80c3c8bbbeed68e3f92d32e2a72d60f4",
+      "matches_accepted_publication": true
+    },
+    "docs/results/acceptance_flight_20261112.json": {
+      "sha256": "4f2a7c638f67369ac86e968e2f2152e8451a3ddc505ada6c09de56db8c552dc7",
+      "matches_accepted_publication": true
+    },
+    "docs/results/acceptance_20261112.json": {
+      "sha256": "08b45b66209a7a502f1d6c98a798656bab70a1fb0b385496d7007f18e0a0ecaa",
+      "matches_accepted_publication": true
+    },
+    "src/glider_visual_nav/simulation/patches/json_state_diagnostics.patch": {
+      "sha256": "d5268390a5cd4d0e570407173e855647f2ebffadf430926ccb73ae1930cef203",
+      "matches_accepted_publication": true
+    },
+    "src/glider_visual_nav/simulation/patches/json_clock_rounding.patch": {
+      "sha256": "1c7f1ca8450558755f8e704f96f328bcf2eae23ebabbb0765c0e65e072fad705",
+      "matches_accepted_publication": true
+    },
+    "src/glider_visual_nav/simulation/patches/fixed_world_magnetic_field.patch": {
+      "sha256": "0d8fd87dbb5e38bd00235f6d25784da71ade7b12d589a44777e8ddca43184b59",
+      "matches_accepted_publication": true
+    },
+    "src/glider_visual_nav/simulation/patches/sitl_uart_drain_frames.patch": {
+      "sha256": "6358f344e935ffd88a3a9f9b5aba11da2bbaa99c50f34973eb22eac016784ec4",
+      "matches_accepted_publication": true
+    },
+    "src/glider_visual_nav/simulation/patches/fdm_drain_latest.patch": {
+      "sha256": "d1c19685de1c4fe84c55fc507ffeae48e9312671cc1323c62ff1eca65d6a4745",
+      "matches_accepted_publication": true
+    },
+    "src/glider_visual_nav/simulation/patches/externalnav_plane_bootstrap.patch": {
+      "sha256": "a274fb9544b77d571e816a86d5bd4344fd7a08bd1e52d39de2e2a0e51788b409",
+      "matches_accepted_publication": true
+    },
+    "src/glider_visual_nav/simulation/models/glider_visual/model.sdf": {
+      "sha256": "6c9b04de09a91e76bd24bd4dd7a1a6aaaccca42aa4262ad0e0677e1d6825afb5",
+      "matches_accepted_publication": true
+    },
+    "src/glider_visual_nav/simulation/models/glider_visual/arduplane.sdf": {
+      "sha256": "84d6c74ae2178c9f93e0b2c118b9abf945336e806b8347b7ce394650405cbfa6",
+      "matches_accepted_publication": true
+    }
+  },
+  "tests": [
+    {
+      "file": "test_visual_odometry.gtest.xml",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "test_dds_processes.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "test_onboard_sensor.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "test_nodes.gtest.xml",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "test_dashboard_math.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "file": "test_arduplane_bridge.xml",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "test_totals": {
+    "tests": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "note": "Accepted model, patches, results are byte-identical. Procurement reference is not an active model change."
+}

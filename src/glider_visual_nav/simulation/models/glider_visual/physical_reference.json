@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "status": "uncalibrated_procurement_reference_NOT_ACTIVE",
+  "selected_airframe": "Volantex Ranger 2400 757-9 PNP",
+  "verified_date": "2026-11-12",
+  "catalog": {
+    "span_m": 2.4,
+    "length_conflicting_catalog_m": [
+      1.143,
+      1.23
+    ]
+  },
+  "measured": {
+    "mass_kg": null,
+    "wing_area_m2": null,
+    "cg_body_m": null,
+    "inertia_cg_kg_m2": null,
+    "camera_offset_body_m": null
+  },
+  "active_bench": {
+    "span_m": 3.2,
+    "mass_kg": 1.6,
+    "wing_area_m2": 0.64,
+    "cg_body_m": [
+      -0.02546875,
+      0,
+      0.0046875
+    ],
+    "inertia_cg_kg_m2": [
+      [
+        0.24773784375,
+        0,
+        0.003723984375
+      ],
+      [
+        0,
+        0.1740223921875,
+        0
+      ],
+      [
+        0.003723984375,
+        0,
+        0.2240646484375
+      ]
+    ],
+    "camera_offset_body_m": [
+      0,
+      0,
+      -0.25
+    ]
+  },
+  "note": "Reference data only. Not loaded by navigation or Gazebo. Accepted SDF is unchanged.",
+  "source": "https://eu.exhobby.com/de/products/volantexrc-ranger-2400-5-channel-fpv-airplane-with-2-4-meter-wingspan-and-multiple-camera"
+}
