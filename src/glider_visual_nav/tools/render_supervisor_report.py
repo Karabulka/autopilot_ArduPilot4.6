@@ -5,25 +5,25 @@ import re
 from pathlib import Path
 
 STYLE = """
-@page { size: A4; margin: 12mm; }
+@page { size: A4; margin: 15mm 18mm; }
 * { box-sizing: border-box; }
-body { margin: 0; font: 10pt/1.25 Arial, sans-serif; color: #152336; }
+body { margin: 0; font: 10.5pt/1.2 "Times New Roman", serif; color: #000; }
 .sheet { break-after: page; page-break-after: always; }
 .sheet:last-child { break-after: auto; page-break-after: auto; }
-h1 { font-size: 16pt; line-height: 1.12; margin: 0 0 3mm; color: #123c60; }
-h2 { font-size: 11.5pt; margin: 3.5mm 0 2mm; color: #123c60; }
+h1 { font-size: 14pt; text-align:center; line-height: 1.12; margin: 0 0 3mm; color: #000; }
+h2 { font-size: 11.5pt; margin: 3.5mm 0 2mm; color: #000; }
 p { margin: 0 0 2.2mm; orphans: 2; widows: 2; }
-table { width: 100%; border-collapse: collapse; margin: 2mm 0 3mm; font-size: 9pt; line-height: 1.18; }
-th { background: #e9f0f6; text-align: left; }
-th,td { padding: 1.5mm 2mm; border: .2mm solid #bdcad7; vertical-align: top; }
+table { width: 100%; border-collapse: collapse; margin: 2mm 0 3mm; font-size: 10.3pt; line-height: 1.18; }
+th { background: white; text-align: left; }
+th,td { padding: 1.5mm 2mm; border: .2mm solid #555; vertical-align: top; }
 tr { break-inside: avoid; page-break-inside: avoid; }
 thead { display: table-header-group; }
-pre { margin: 2mm 0 3mm; padding: 2.5mm; background: #edf2f6; font: 8.2pt/1.5 Consolas, monospace; white-space: pre-wrap; }
-a { color: #164e76; text-decoration: none; }
-.footer { border-top: .2mm solid #c8d2de; padding-top: 2mm; margin-top: 3mm; font-size: 8pt; color: #526477; }
+pre { margin: 2mm 0 3mm; padding: 2.5mm; background: white; font: 8.2pt/1.5 Consolas, monospace; white-space: pre-wrap; }
+a { color: #000; text-decoration: none; }
+.footer { text-align:center; padding-top: 2mm; margin-top: 3mm; font-size: 8pt; color: #000; }
 @media screen {
- body { background: #dfe5ec; }
- .sheet { width: 210mm; min-height: 297mm; margin: 8mm auto; padding: 12mm; background: white; box-shadow: 0 2px 12px #aab4c0; }
+ body { background: #eee; }
+ .sheet { width: 210mm; min-height: 297mm; margin: 8mm auto; padding: 15mm 18mm; background: white; box-shadow:none; }
 }
 """
 
@@ -31,7 +31,7 @@ def inline(text):
     escaped = html.escape(text)
     escaped = re.sub(r'\[([^\]]+)\]\((https?://[^)]+)\)',
                      r'<a href="\2">\1</a>', escaped)
-    return re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', escaped)
+    return escaped.replace('**', '')
 
 def render_section(source):
     out, paragraph = [], []
