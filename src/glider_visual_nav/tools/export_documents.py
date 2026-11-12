@@ -37,6 +37,10 @@ def export(destination, root):
     docs = root / 'docs'
     links = []
     selected = []
+    pdf_source = docs / 'SUPERVISOR_REPORT_RU.pdf'
+    if pdf_source.exists():
+        shutil.copyfile(pdf_source, destination / 'ОТЧЕТ_ДЛЯ_РУКОВОДИТЕЛЯ.pdf')
+        selected.append(pdf_source)
     for name in NAMES:
         source = docs / (name + ('.txt' if name == 'START_ARDUPILOT_RU' else '.md'))
         if not source.exists():
@@ -115,7 +119,7 @@ def export(destination, root):
     artifact_links.insert(0, '<li><a href="artifacts/manifest.json">SHA256 manifest</a></li>')
     (destination / 'ОТКРЫТЬ.html').write_text(page(
         'Планер — материалы проекта',
-        '<p style="font-size:22px;font-weight:bold"><a href="ОТЧЕТ_ДЛЯ_РУКОВОДИТЕЛЯ.html">ОТЧЕТ ДЛЯ НАУЧНОГО РУКОВОДИТЕЛЯ — открыть / распечатать</a></p>\n'
+        '<p style="font-size:22px;font-weight:bold"><a href="ОТЧЕТ_ДЛЯ_РУКОВОДИТЕЛЯ.pdf">ОТЧЕТ ДЛЯ НАУЧНОГО РУКОВОДИТЕЛЯ — PDF</a></p>\n'
         '<h1>Планер — материалы проекта</h1>'
         '<p>Приемка 12 ноября: passed=true; 27 тестов без ошибок. '
         'Физический носитель: Ranger 2400 PNP; параметры реального экземпляра требуют обмера.</p>'
