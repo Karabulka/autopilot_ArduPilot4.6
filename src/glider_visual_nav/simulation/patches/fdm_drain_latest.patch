@@ -1,0 +1,19 @@
+--- a/libraries/SITL/SIM_JSON.cpp
++++ b/libraries/SITL/SIM_JSON.cpp
+@@ -276,6 +276,16 @@
+             printf("No JSON sensor message received, resending servos\n");
+             output_servos(input);
+         }
++    }
++
++    // UDP is a state stream, not a command queue. Drain stale complete datagrams.
++    // Keeping historical states here produces seconds of sensor latency under load.
++    char newest[sizeof(sensor_buffer)];
++    ssize_t more;
++    while ((more = sock.recv(newest, sizeof(newest), 0)) > 0) {
++        memcpy(sensor_buffer, newest, more);
++        sensor_buffer_len = 0;
++        ret = more;
+     }
+ 
+     // convert '\n' into nul

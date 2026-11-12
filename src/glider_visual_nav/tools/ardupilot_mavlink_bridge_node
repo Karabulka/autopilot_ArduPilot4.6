@@ -71,6 +71,9 @@ class Bridge(Node):
         self.baro_startup = []
         self.declare_parameter('baud', 921600)
         self.declare_parameter('timestamp_mode', 'arrival')
+        self.declare_parameter('publish_inertial', True)
+        self.declare_parameter('diagnostic_path', '')
+        self.diagnostic_file = open(self.value('diagnostic_path'), 'w') if self.value('diagnostic_path') else None
         self.declare_parameter('vehicle_system', 1)
         self.declare_parameter('reference_pressure_hpa', 1013.25)
         self.declare_parameter('send_external_velocity', False)
@@ -99,12 +102,13 @@ class Bridge(Node):
         self.raw_gyro = None
         self.raw_gyro_rx = -math.inf
         self.next_heartbeat = 0.
+        self.next_output = 0.
         self.last_attitude_rx = -math.inf
         self.next_stream_request = 0.
         self.next_origin = 0.
         self.origin_confirmed = False
         self.home_confirmed = False
-        self.create_timer(0.02, self.tick, clock=Clock(clock_type=ClockType.STEADY_TIME))
+        self.create_timer(0.005, self.tick, clock=Clock(clock_type=ClockType.STEADY_TIME))
 
     def value(self, name):
         return self.get_parameter(name).value
@@ -171,6 +175,11 @@ class Bridge(Node):
     def receive(self, packet, now):
         kind = packet.get_type()
         self.counts["rx_"+kind] += 1
+        if self.diagnostic_file and kind in ('ATTITUDE','RAW_IMU','SCALED_PRESSURE'):
+            row=packet.to_dict()
+            row['clock']=self.get_clock().now().nanoseconds*1e-9
+            self.diagnostic_file.write(json.dumps(row)+'\n')
+            self.diagnostic_file.flush()
         if kind == 'HEARTBEAT' and packet.autopilot == mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA:
             if now-self.heartbeat_rx > 2.:
                 self.next_stream_request = self.next_origin = 0.
@@ -213,7 +222,8 @@ class Bridge(Node):
             rates = self.raw_gyro if self.raw_gyro is not None and now-self.raw_gyro_rx < .2 else S @ values[3:]
             msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z = rates.tolist()
             msg.linear_acceleration_covariance[0] = -1.
-            self.imu.publish(msg)
+            if self.value('publish_inertial'):
+                self.imu.publish(msg)
             self.counts["imu_published"] += 1
             self.last_attitude_rx = now
         elif kind == 'RAW_IMU':
@@ -224,7 +234,8 @@ class Bridge(Node):
                 return
             self.publish_mag(packet)
         elif kind == 'SCALED_PRESSURE':
-            self.publish_pressure(packet)
+            if self.value('publish_inertial'):
+                self.publish_pressure(packet)
 
     def publish_mag(self, packet):
         if getattr(packet, 'id', 0) == 0 and self.value('publish_magnetometer'):
@@ -253,12 +264,24 @@ class Bridge(Node):
 
     def tick(self):
         now = time.monotonic()
-        for _ in range(64):
-            packet = self.link.recv_match(blocking=False)
-            if packet is None:
-                break
-            if packet.get_srcSystem() == self.value('vehicle_system'):
-                self.receive(packet, now)
+        if isinstance(self.link, mavutil.mavudp):
+            # recv_msg parses one frame per call while reading another datagram.
+            # Decode every frame in each UDP datagram and drain the OS socket.
+            while True:
+                data = self.link.recv()
+                if not data:
+                    break
+                for packet in self.link.mav.parse_buffer(data) or []:
+                    self.link.post_message(packet)
+                    if packet.get_srcSystem() == self.value('vehicle_system'):
+                        self.receive(packet, now)
+        else:
+            while True:
+                packet = self.link.recv_match(blocking=False)
+                if packet is None:
+                    break
+                if packet.get_srcSystem() == self.value('vehicle_system'):
+                    self.receive(packet, now)
         hb = self.heartbeat
         if now >= self.next_diagnostics:
             self.get_logger().info("MAVLINK_DIAGNOSTICS "+json.dumps(dict(self.counts), sort_keys=True)+
@@ -282,6 +305,9 @@ class Bridge(Node):
                     mavutil.mavlink.MAV_FRAME_GLOBAL, mavutil.mavlink.MAV_CMD_DO_SET_HOME,
                     0, 0, 0, 0, 0, 0, 473977420, 85455940, 0.)
             self.next_origin = now + 5.
+        if now < self.next_output:
+            return
+        self.next_output = now + .02
         active = (hb is not None and now-self.heartbeat_rx < 2. and hb.custom_mode == 15
                   and hb.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED
                   and now-self.target_rx < .5 and now-self.odom_rx < .5

@@ -146,12 +146,21 @@ def main():
         if release.returncode or 'data: true' not in release.stdout:
             raise RuntimeError('fixture did not release: '+release.stdout+release.stderr)
         end = time.monotonic()+args.duration*6+20
+        # Measure the requested duration in flight, not the service-call latency.
+        # The original two-second deficit included time spent invoking gz service.
+        release_reference = start_stamp
+        while first_airborne is None:
+            rclpy.spin_once(node, timeout_sec=.1)
+            if time.monotonic()>end or truth[0]-release_reference>10:
+                raise RuntimeError('airborne motion did not begin after release')
+        start_stamp = first_airborne
+        result['release_to_airborne_s'] = first_airborne-release_reference
         while truth[0]-start_stamp < args.duration:
             rclpy.spin_once(node, timeout_sec=.1)
             if time.monotonic() > end or any(p.poll() is not None for p in processes):
                 raise RuntimeError('simulator stopped or timed out')
         result.update(sim_seconds=truth[0]-start_stamp,
-                      airborne_seconds=max(0., (airborne_until or start_stamp)-start_stamp),
+                      airborne_seconds=max(0., (airborne_until or start_stamp)-(first_airborne or start_stamp)),
                       final_position=truth[1:], minimum_height=minimum_height, peak_speed=airspeed)
         result['first_airborne_sim_time'] = first_airborne
         result['airborne_samples'] = airborne_samples

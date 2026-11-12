@@ -40,6 +40,15 @@ class ArduPlaneBridgeTest(unittest.TestCase):
             np.testing.assert_allclose(actual,[[0,-1,0],[-1,0,0],[0,0,-1]],atol=1e-12)
             self.assertAlmostEqual(a[2],-.25)
 
+    def test_udp_datagram_all_frames_decoded(self):
+        buffer = io.BytesIO()
+        writer=mav.MAVLink(buffer,srcSystem=1,srcComponent=1)
+        for n in range(100):
+            writer.attitude_send(n*20,0.,0.,0.,.1,.2,.3)
+        messages=mav.MAVLink(None).parse_buffer(buffer.getvalue())
+        self.assertEqual(len(messages),100)
+        self.assertEqual(messages[-1].time_boot_ms,1980)
+
     def test_east_heading_to_ned(self):
         q = bridge['ned_attitude']([0., 0., 0., 1.])
         self.assertAlmostEqual(abs(q[0]), math.sqrt(.5))

@@ -1,0 +1,33 @@
+{
+  "run": "log_visual_nav/arduplane_20261112_103622_12283",
+  "evaluation": "log_visual_nav/acceptance_20261112.jsonl",
+  "RAW_IMU": {
+    "samples": 3600,
+    "emission_age_max_s": 0.012000000000014666,
+    "emission_age_p99_s": 0.008000000000009777,
+    "emission_age_median_s": 0.0040000000000048885
+  },
+  "ATTITUDE": {
+    "samples": 3600,
+    "emission_age_max_s": 0.012000000000014666,
+    "emission_age_p99_s": 0.008000000000009777,
+    "emission_age_median_s": 0.003999999999997783,
+    "angle_rmse_at_receipt_deg": [
+      0.5796545493343954,
+      1.0887608259324417,
+      4.34774230840876
+    ]
+  },
+  "SCALED_PRESSURE": {
+    "samples": 2250,
+    "emission_age_max_s": 0.012000000000014666,
+    "emission_age_p99_s": 0.008000000000009777,
+    "emission_age_median_s": 0.003999999999997783
+  },
+  "jsn_clock_offset_s": {
+    "samples": 27655,
+    "min": 0.003996215820322391,
+    "max": 0.004003784179687386
+  },
+  "note": "MAVLink emission age includes HAL/physics clock offset; it is not gyro filter group delay."
+}

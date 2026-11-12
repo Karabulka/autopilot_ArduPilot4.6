@@ -1,0 +1,7 @@
+# Main launch selector: INERTIAL_SOURCE=direct (default) or mavlink.
+# Direct sensors retain acquisition timestamps. Never connect /evaluation topics.
+onboard_sensor_node:
+  ros__parameters:
+    use_sim_time: true
+    initial_body_height_m: 145.25  # known launch fixture reference, not truth feedback
+    reference_pressure_pa: 101325.0

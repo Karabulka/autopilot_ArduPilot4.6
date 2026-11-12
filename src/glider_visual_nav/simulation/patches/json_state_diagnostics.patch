@@ -1,0 +1,11 @@
+--- a/libraries/SITL/SIM_JSON.cpp
++++ b/libraries/SITL/SIM_JSON.cpp
+@@ -448,7 +448,7 @@
+     last_timestamp_s = state.timestamp_s;
+     frame_counter++;
+ 
+-#if 0
++#if 1
+ 
+     float roll, pitch, yaw;
+     if ((received_bitmask & QUAT_ATT) != 0) {

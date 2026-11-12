@@ -69,7 +69,7 @@ install(TARGETS optical_flow_node navigation_node los_controller_node DESTINATIO
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME} PATTERN "__pycache__" EXCLUDE)
 install(DIRECTORY simulation DESTINATION share/${PROJECT_NAME})
-install(PROGRAMS tools/ardupilot_mavlink_bridge_node tools/flight_dashboard.py DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS tools/ardupilot_mavlink_bridge_node tools/onboard_sensor_node.py tools/flight_dashboard.py DESTINATION lib/${PROJECT_NAME})
 install(FILES tools/dashboard_plots.py DESTINATION lib/${PROJECT_NAME})
 install(FILES README.md SPRINT2_REPORT.md SPRINT3_REPORT.md DESTINATION share/${PROJECT_NAME})
 ament_export_targets(export_visual_odometry HAS_LIBRARY_TARGET)
@@ -86,6 +86,7 @@ if(BUILD_TESTING)
   target_link_libraries(test_nodes navigation_nodes visual_odometry)
   ament_target_dependencies(test_nodes rclcpp sensor_msgs geometry_msgs nav_msgs rosgraph_msgs tf2_msgs)
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  ament_add_test(test_onboard_sensor COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_onboard_sensor.py TIMEOUT 25 GENERATE_RESULT_FOR_RETURN_CODE_ZERO)
   ament_add_test(test_arduplane_bridge COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/test/test_arduplane_bridge.py TIMEOUT 25 GENERATE_RESULT_FOR_RETURN_CODE_ZERO)
   ament_add_test(test_dashboard_math COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/test/test_dashboard_math.py

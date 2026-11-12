@@ -16,3 +16,7 @@ PX4 не переносились и не удалялись.
 Для новых отчетов использовать тематическое имя с датой, данные хранить
 в docs/results, большие записи только в log_visual_nav. Не создавать
 дубликаты исходников в корне. Desktop HTML/TXT — экспорт для чтения.
+
+Текущая приемка — ACCEPTANCE_2026-11-12.md.
+Экспорт desktop: tools/export_documents.py DESTINATION.
+Объединитель критериев: tools/build_acceptance_report.py.

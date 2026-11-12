@@ -1,0 +1,65 @@
+{
+  "source": "log_visual_nav/acceptance_20261112.jsonl",
+  "counts": {
+    "truth": 7282,
+    "imu": 29113,
+    "nav": 3513,
+    "height": 5801,
+    "flow": 3513,
+    "direct_imu": 0
+  },
+  "imu": {
+    "samples": 22497,
+    "delivery_age_max_s": 0.020000000000003126,
+    "delivery_age_min_s": -0.016000000000005343,
+    "delivery_age_p99_s": 0.008000000000009777,
+    "angle_rmse_deg": [
+      0.00017036041876780363,
+      0.00033809774014251947,
+      0.0003440235446419879
+    ],
+    "gyro_rmse_rad_s": [
+      0.0005819481967562162,
+      0.0005751899637384653,
+      0.00039845566144544494
+    ],
+    "gyro_best_shift_s": 0.0
+  },
+  "nav": {
+    "samples": 2725,
+    "delivery_age_max_s": 0.10400000000000631,
+    "delivery_age_min_s": 0.06799999999999784,
+    "delivery_age_p99_s": 0.0840000000000174,
+    "angle_rmse_deg": [
+      0.00016941521856741174,
+      0.00041770194454516314,
+      0.00037326302416865604
+    ],
+    "velocity_rmse_m_s": [
+      0.1128011308591548,
+      0.1318909092131845,
+      0.13269493037495447
+    ]
+  },
+  "flow": {
+    "samples": 2725,
+    "delivery_age_max_s": 0.0940000000000012,
+    "delivery_age_min_s": 0.06799999999999784,
+    "delivery_age_p99_s": 0.0840000000000174,
+    "velocity_rmse_m_s": [
+      0.1128011308591548,
+      0.1318909092131845,
+      0.13269493037495447
+    ]
+  },
+  "height": {
+    "samples": 4501,
+    "delivery_age_max_s": 0.016000000000005343,
+    "delivery_age_min_s": -0.015999999999998238,
+    "delivery_age_p99_s": 0.012000000000000455,
+    "body_height_rmse_m": 0.007533128105790067,
+    "body_height_max_abs_m": 0.015416117627268022
+  },
+  "accuracy_passed": true,
+  "note": "Flight smoke passed is separate from accuracy_passed. Offsets are offline diagnostics, never truth input."
+}

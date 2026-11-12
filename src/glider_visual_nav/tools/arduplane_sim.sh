@@ -46,13 +46,20 @@ start() {
   setsid "$@" > "$RUN/$log.log" 2>&1 &
   pids+=("$!")
 }
+start fdm python3 "$PKG/tools/fdm_udp_proxy.py" "$RUN/fdm.jsonl"
 start gazebo gz sim -s -r --headless-rendering "$PKG/simulation/worlds/arduplane_glider_visual.sdf"
 cd "$RUN"
 gcs=none
 if [[ "${ARDUPLANE_ENABLE_CONTROL:-false}" == true ]]; then gcs=udpclient:127.0.0.1:14551; fi
 start plane "$PLANE" --model JSON --defaults "${ARDUPLANE_PARAMS:-$PKG/config/arduplane_glider.parm}" --serial0 udpclient:127.0.0.1:14550 --serial1 "$gcs" --serial2 none --home 47.397742,8.545594,0,90
 start bridge ros2 run ros_gz_bridge parameter_bridge   "/world/glider_visual_flight/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock"   "/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image"   "/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo"   "/world/glider_visual_flight/model/glider_visual/link/base_link/sensor/magnetometer_sensor/magnetometer@sensor_msgs/msg/MagneticField[gz.msgs.Magnetometer" "/evaluation/ground_truth@nav_msgs/msg/Odometry[gz.msgs.Odometry"   --ros-args -r /world/glider_visual_flight/clock:=/clock -r /world/glider_visual_flight/model/glider_visual/link/base_link/sensor/magnetometer_sensor/magnetometer:=/glider/magnetic_field
-start mavlink python3 "$PKG/tools/ardupilot_mavlink_bridge_node" --ros-args   -p use_sim_time:=true -p initial_body_height_m:=145.25 -p flight_regime:=unpowered_glide   -p send_integrated_flow:=true -p send_legacy_flow:=true -p send_external_velocity:=true -p send_external_pose:=true -p set_local_origin:=true -p publish_magnetometer:=false   -p enable_attitude_control:="${ARDUPLANE_ENABLE_CONTROL:-false}"
+inertial=true
+if [[ "${INERTIAL_SOURCE:-direct}" == direct ]]; then
+  inertial=false
+  start onboard_bridge ros2 run ros_gz_bridge parameter_bridge "/sensors/navigation_imu@sensor_msgs/msg/Imu[gz.msgs.IMU" "/world/glider_visual_flight/model/glider_visual/link/base_link/sensor/air_pressure_sensor/air_pressure@sensor_msgs/msg/FluidPressure[gz.msgs.FluidPressure" --ros-args -r /world/glider_visual_flight/model/glider_visual/link/base_link/sensor/air_pressure_sensor/air_pressure:=/sensors/static_pressure
+  start onboard python3 "$PKG/tools/onboard_sensor_node.py" --ros-args --params-file "$PKG/config/arduplane_sensor_sources.yaml"
+fi
+start mavlink python3 "$PKG/tools/ardupilot_mavlink_bridge_node" --ros-args   -p use_sim_time:=true -p publish_inertial:="$inertial" -p diagnostic_path:="$RUN/mavlink_packets.jsonl" -p initial_body_height_m:=145.25 -p flight_regime:=unpowered_glide   -p send_integrated_flow:=true -p send_legacy_flow:=true -p send_external_velocity:="${EXTERNAL_NAV_FEEDBACK:-true}" -p send_external_pose:="${EXTERNAL_NAV_FEEDBACK:-true}" -p set_local_origin:=true -p publish_magnetometer:=false   -p enable_attitude_control:="${ARDUPLANE_ENABLE_CONTROL:-false}"
 start navigation ros2 launch glider_visual_nav navigation.launch.py   "params_file:=$PKG/config/arduplane_navigation.yaml" orientation_mode:=imu_aided
 echo "ArduPlane logs: $RUN"
 wait -n "${pids[@]}"

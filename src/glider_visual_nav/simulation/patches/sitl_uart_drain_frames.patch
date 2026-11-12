@@ -1,0 +1,41 @@
+--- a/libraries/AP_HAL_SITL/UARTDriver.cpp
++++ b/libraries/AP_HAL_SITL/UARTDriver.cpp
+@@ -838,22 +838,26 @@
+     }
+ #endif
+     if (_packetise) {
+-        uint16_t n = _writebuffer.available();
+-        n = MIN(n, max_bytes);
++        // A telemetry stream can generate several frames per physics tick.
++        // Drain complete frames, preserving one small MAVLink frame per UDP packet.
++        // Keep the configured byte budget when simulated baud limiting is enabled.
++        while (_writebuffer.available() > 0 && max_bytes > 0) {
++            uint16_t n = MIN(_writebuffer.available(), max_bytes);
+ #if HAL_GCS_ENABLED
+-        if (n > 0) {
+             n = mavlink_packetise(_writebuffer, n);
+-        }
+-#endif
+-        if (n > 0) {
+-            // keep as a single UDP packet
++#endif
++            if (n == 0) {
++                break;
++            }
+             uint8_t tmpbuf[n];
+             _writebuffer.peekbytes(tmpbuf, n);
+-            ssize_t ret = send(_fd, tmpbuf, n, MSG_DONTWAIT);
+-            if (ret > 0) {
+-                _writebuffer.advance(ret);
+-                _tx_stats_bytes += ret;
+-            }
++            const ssize_t ret = send(_fd, tmpbuf, n, MSG_DONTWAIT);
++            if (ret <= 0) {
++                break;
++            }
++            _writebuffer.advance(ret);
++            _tx_stats_bytes += ret;
++            max_bytes -= ret;
+         }
+     } else {
+         uint32_t navail;
