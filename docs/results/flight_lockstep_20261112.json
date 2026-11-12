@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "test": "SITL GUIDED flight with normal arming",
+  "guided_requested": true,
+  "active_samples": 5638,
+  "frames": 3411,
+  "imu": 3440,
+  "magnetometer": 11245,
+  "barometer": 2538,
+  "odometry": 2466,
+  "guided_confirmed": true,
+  "armed": true,
+  "sim_seconds": 90.0,
+  "airborne_seconds": 90.0,
+  "final_position": [
+    273.7596688334915,
+    98.03090075954591,
+    29.25065840584854
+  ],
+  "minimum_height": 29.25065840584854,
+  "peak_speed": 16.457245796506044,
+  "first_airborne_sim_time": 25.76,
+  "airborne_samples": 5522
+}

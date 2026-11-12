@@ -1,0 +1,53 @@
+{
+  "source": "log_visual_nav/alignment_sync_20261112.jsonl",
+  "counts": {
+    "truth": 7130,
+    "imu": 3480,
+    "nav": 2820,
+    "height": 2526,
+    "flow": 2820,
+    "direct_imu": 0
+  },
+  "imu": {
+    "samples": 2703,
+    "angle_rmse_deg": [
+      28.60478233037514,
+      10.469028895335672,
+      32.24285216646612
+    ],
+    "gyro_rmse_rad_s": [
+      0.36887685174868934,
+      0.18401277193783916,
+      0.25704372997168873
+    ],
+    "gyro_best_shift_s": -1.23
+  },
+  "nav": {
+    "samples": 2511,
+    "angle_rmse_deg": [
+      13.121246206217322,
+      8.186214876093027,
+      22.349464620500143
+    ],
+    "velocity_rmse_m_s": [
+      24.478793048224297,
+      39.950915116807394,
+      21.1768838135897
+    ]
+  },
+  "flow": {
+    "samples": 2511,
+    "velocity_rmse_m_s": [
+      24.478793048224297,
+      39.950915116807394,
+      21.1768838135897
+    ]
+  },
+  "height": {
+    "samples": 2017,
+    "body_height_rmse_m": 1.951046207079234,
+    "body_height_max_abs_m": 5.647667362585921
+  },
+  "accuracy_passed": false,
+  "note": "Flight smoke passed is separate from accuracy_passed. Offsets are offline diagnostics, never truth input."
+}

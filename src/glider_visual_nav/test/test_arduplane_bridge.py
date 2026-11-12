@@ -10,6 +10,36 @@ mav = bridge['mavutil'].mavlink
 
 
 class ArduPlaneBridgeTest(unittest.TestCase):
+    def test_boot_clock_removes_variable_transport_delay(self):
+        c=bridge['BootClockMapper']()
+        self.assertAlmostEqual(c.map(10.,110.),110.)
+        self.assertAlmostEqual(c.map(10.02,110.12),110.02)
+        self.assertAlmostEqual(c.map(10.04,110.14),110.04)
+        self.assertAlmostEqual(c.map(.01,2.),2.)
+        with self.assertRaises(ValueError):
+            c.map(float('nan'),2.)
+
+    def test_tilt_and_body_rates_roundtrip(self):
+        import numpy as np
+        r=bridge['Rotation'].from_euler('xyz',[.3,-.2,1.1]).as_matrix()
+        ned=bridge['T']@r@bridge['S']
+        np.testing.assert_allclose(bridge['T'].T@ned@bridge['S'].T,r,atol=1e-12)
+        np.testing.assert_allclose(bridge['S']@np.array([100.,200.,300.])*.001,[.1,-.2,-.3])
+
+    def test_optical_pose_contract(self):
+        import xml.etree.ElementTree as ET
+        import numpy as np
+        root=Path(__file__).resolve().parents[1]
+        for name in ('model.sdf','arduplane.sdf'):
+            tree=ET.parse(root/'simulation/models/glider_visual'/name)
+            pose=tree.find(".//sensor[@name='nadir_camera']/pose")
+            a=[float(v) for v in pose.text.split()]
+            # Gazebo camera: forward +X, left +Y, up +Z.
+            optical=np.array([[0,0,1],[-1,0,0],[0,-1,0]])
+            actual=bridge['Rotation'].from_euler('xyz',a[3:]).as_matrix()@optical
+            np.testing.assert_allclose(actual,[[0,-1,0],[-1,0,0],[0,0,-1]],atol=1e-12)
+            self.assertAlmostEqual(a[2],-.25)
+
     def test_east_heading_to_ned(self):
         q = bridge['ned_attitude']([0., 0., 0., 1.])
         self.assertAlmostEqual(abs(q[0]), math.sqrt(.5))

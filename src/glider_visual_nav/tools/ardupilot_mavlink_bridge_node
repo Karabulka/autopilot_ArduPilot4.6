@@ -4,7 +4,7 @@ import math
 import os
 import time
 import json
-from collections import Counter
+from collections import Counter, deque
 from statistics import median
 
 os.environ['MAVLINK20'] = '1'
@@ -37,6 +37,30 @@ def pressure_height(pressure, reference):
     return 44330.0 * (1.0 - (pressure / reference) ** 0.190295)
 
 
+class BootClockMapper:
+    """Map acquisition boot timestamps to ROS clock; minimum arrival delay window.
+    Time scale must be shared (seconds). Reset on either clock moving backwards.
+    """
+    def __init__(self):
+        self.offsets = deque(maxlen=250)
+        self.previous = None
+        self.last_stamp = None
+
+    def map(self, boot, clock):
+        if not math.isfinite(boot+clock) or min(boot,clock) < 0:
+            raise ValueError("invalid clock")
+        if self.previous and (boot < self.previous[0] or clock < self.previous[1]):
+            self.offsets.clear()
+            self.last_stamp = None
+        self.previous = boot,clock
+        self.offsets.append(clock-boot)
+        mapped = min(clock, boot+min(self.offsets))
+        # A newly observed smaller delay must not reorder published samples.
+        mapped = max(mapped,self.last_stamp or 0.)
+        self.last_stamp = mapped
+        return mapped
+
+
 class Bridge(Node):
     def __init__(self):
         super().__init__('ardupilot_mavlink_bridge_node')
@@ -46,6 +70,7 @@ class Bridge(Node):
         self.baro_offset = None
         self.baro_startup = []
         self.declare_parameter('baud', 921600)
+        self.declare_parameter('timestamp_mode', 'arrival')
         self.declare_parameter('vehicle_system', 1)
         self.declare_parameter('reference_pressure_hpa', 1013.25)
         self.declare_parameter('send_external_velocity', False)
@@ -70,6 +95,7 @@ class Bridge(Node):
         self.counts = Counter({key: 0 for key in ("rx_ATTITUDE", "rx_RAW_IMU", "rx_SCALED_IMU2", "rx_HIGHRES_IMU", "imu_published", "reject_attitude_nonfinite", "reject_clock_not_started")})
         self.next_diagnostics = 0.
         self.yaw_diagnostics = {}
+        self.boot_clock = BootClockMapper()
         self.raw_gyro = None
         self.raw_gyro_rx = -math.inf
         self.next_heartbeat = 0.
@@ -176,6 +202,12 @@ class Bridge(Node):
                 return
             msg = Imu()
             self.header(msg, 'base_link')
+            acquisition = self.get_clock().now().nanoseconds*1e-9
+            if self.value('timestamp_mode') == 'boot_offset':
+                acquisition = self.boot_clock.map(packet.time_boot_ms*.001, acquisition)
+            msg.header.stamp.sec = int(acquisition)
+            msg.header.stamp.nanosec = int((acquisition-int(acquisition))*1e9)
+            self.yaw_diagnostics['boot_clock_offset_s'] = acquisition-packet.time_boot_ms*.001
             q = Rotation.from_matrix(T @ Rotation.from_euler('xyz', values[:3]).as_matrix() @ S).as_quat()
             msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w = q.tolist()
             rates = self.raw_gyro if self.raw_gyro is not None and now-self.raw_gyro_rx < .2 else S @ values[3:]

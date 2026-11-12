@@ -1,0 +1,53 @@
+{
+  "source": "log_visual_nav/alignment_baud_20261112.jsonl",
+  "counts": {
+    "truth": 7132,
+    "imu": 3486,
+    "nav": 2380,
+    "height": 2499,
+    "flow": 2380,
+    "direct_imu": 0
+  },
+  "imu": {
+    "samples": 2716,
+    "angle_rmse_deg": [
+      29.041386015158864,
+      10.304175038672584,
+      36.309865146311054
+    ],
+    "gyro_rmse_rad_s": [
+      0.31508820552331807,
+      0.1745969565823194,
+      0.25537485090380074
+    ],
+    "gyro_best_shift_s": -1.24
+  },
+  "nav": {
+    "samples": 2083,
+    "angle_rmse_deg": [
+      13.357413204727207,
+      9.007280391763148,
+      19.17170769020017
+    ],
+    "velocity_rmse_m_s": [
+      26.078012357566934,
+      38.827367773830126,
+      19.278459339225144
+    ]
+  },
+  "flow": {
+    "samples": 2083,
+    "velocity_rmse_m_s": [
+      26.078012357566934,
+      38.827367773830126,
+      19.278459339225144
+    ]
+  },
+  "height": {
+    "samples": 2008,
+    "body_height_rmse_m": 1.8363942468146197,
+    "body_height_max_abs_m": 4.894618698359253
+  },
+  "accuracy_passed": false,
+  "note": "Flight smoke passed is separate from accuracy_passed. Offsets are offline diagnostics, never truth input."
+}

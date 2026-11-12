@@ -1,0 +1,62 @@
+{
+  "source": "log_visual_nav/alignment_direct_20261112.jsonl",
+  "counts": {
+    "truth": 3460,
+    "imu": 1719,
+    "nav": 1609,
+    "height": 1276,
+    "flow": 1609,
+    "direct_imu": 13818
+  },
+  "imu": {
+    "samples": 1718,
+    "angle_rmse_deg": [
+      25.405411608322606,
+      10.827485406988476,
+      30.36655162188194
+    ],
+    "gyro_rmse_rad_s": [
+      0.3607388946174758,
+      0.1463188512558076,
+      0.24791362643739887
+    ],
+    "gyro_best_shift_s": -1.23
+  },
+  "nav": {
+    "samples": 1605,
+    "angle_rmse_deg": [
+      13.26068248796057,
+      7.650716580747062,
+      18.518835874519656
+    ],
+    "velocity_rmse_m_s": [
+      11.806929996516061,
+      32.255944079965715,
+      7.942558257504034
+    ]
+  },
+  "flow": {
+    "samples": 1605,
+    "velocity_rmse_m_s": [
+      11.806929996516061,
+      32.255944079965715,
+      7.942558257504034
+    ]
+  },
+  "height": {
+    "samples": 1275,
+    "body_height_rmse_m": 1.8760896122830741,
+    "body_height_max_abs_m": 3.9623741454574315
+  },
+  "direct_imu": {
+    "samples": 13815,
+    "gyro_rmse_rad_s": [
+      0.0006721031423728933,
+      0.0003912370078565826,
+      0.00047539880276385737
+    ],
+    "gyro_best_shift_s": 0.0
+  },
+  "accuracy_passed": false,
+  "note": "Flight smoke passed is separate from accuracy_passed. Offsets are offline diagnostics, never truth input."
+}
